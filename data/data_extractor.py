@@ -1,33 +1,27 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+import pandas as pd
+import requests
 
-# Find the folder containing data_extractor.py
-script_folder = Path(__file__).resolve().parent
+load_dotenv()
+#assumes .env file is in the same directory as this script
 
-# Go up to the project folder
-env_path = script_folder.parent / ".env"
+api_key = os.getenv('API_key')
+#use api key without hardcoding it into the script
 
-# Check the file location
-print("Looking for:", env_path)
-print("File exists:", env_path.is_file())
+url = 'https://api.football-data.org/v4/competitions/'
 
-# Load the .env file
-loaded = load_dotenv(dotenv_path=env_path, override=True)
+headers = {
+    'X-Auth-Token': api_key
+}
 
-print("Dotenv loaded:", loaded)
+params = {
+    'season': 2025
+}
 
-# Retrieve the variable using YOUR exact spelling
-api_key = os.getenv("API_key")
+response = requests.get(url, headers=headers) #params=params)
 
-print("API key found:", bool(api_key))
-
-from pathlib import Path
-
-print("Script location:", Path(__file__).resolve())
-print("Parent folder:", Path(__file__).resolve().parent)
-print("Project folder:", Path(__file__).resolve().parent.parent)
-
-print("Files in project folder:")
-for file in Path(__file__).resolve().parent.parent.iterdir():
-    print(repr(file.name))
+print(response.status_code)
+if response.status_code == 200:
+    data = response.json()
+    print(data.keys())
