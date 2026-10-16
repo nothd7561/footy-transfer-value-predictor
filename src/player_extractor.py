@@ -1,5 +1,5 @@
 import os
-import pathlib as Path
+from pathlib import Path
 import pandas as pd
 import json
 
@@ -9,7 +9,7 @@ project_dir = Path(__file__).resolve().parent.parent
 league = "PL"
 season = 2025
 
-file_path = project_dir / "data" / "raw" / f"teams_{league}_{season}.json"
+file_path = project_dir / "data" / "raw_data" / f"teams_{league}_{season}.json"
 #find the saved JSON file
 
 with open(file_path, "r", encoding="utf-8") as file:
@@ -37,3 +37,10 @@ for team in teams:
 player_data_df = pd.DataFrame(player_list)
 #convert the list of dictionaries into a DataFrame, which is a more convenient format for data analysis
 
+save_path = project_dir / "data" / "processed_data" / f"players_{league}_{season}.csv"
+#generalizes the path for saving the processed data, so I don't need to keep manually renaming the path
+save_path.parent.mkdir(parents=True, exist_ok=True)
+#checks if the parent directory folder exists, and creates it if it doesn't
+
+player_data_df.to_csv(save_path, index=False)
+print(len(player_data_df))
