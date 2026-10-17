@@ -5,6 +5,8 @@ import json
 import requests
 from dotenv import load_dotenv, find_dotenv
 
+###extract the matches from the league id
+
 file_dir = Path(__file__).resolve().parents[2]
 #get the overall path of the file
 
@@ -25,6 +27,7 @@ for league in leagues:
         league_id = league['id']
 
 season = '2025'
+#changed from 2025/2026
 
 url = f'https://api.pitchapi.dev/v1/leagues/{league_id}/matches'
 
@@ -42,9 +45,9 @@ if save_path.exists():
     print('File found, already exists, lets load the data')
 else:
     response = requests.get(url, headers=headers, params=params, timeout=30)
-    print("Status:", response.status_code)
-    print("Response:", response.text)
-    print("URL:", response.url)
+    #print("Status:", response.status_code)
+    #print("Response:", response.text)
+    #print("URL:", response.url)
     response.raise_for_status()
 
     match_data = response.json()
@@ -58,3 +61,4 @@ else:
     print('File not found, lets fetch the data')
 
 print(match_data.keys())
+

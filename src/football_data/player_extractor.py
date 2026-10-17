@@ -9,7 +9,7 @@ project_dir = Path(__file__).resolve().parent.parent
 league = "PL"
 season = 2025
 
-file_path = project_dir / "data" / "raw_data" / f"teams_{league}_{season}.json"
+file_path = project_dir / "data" / "raw_data" / f"football_data_{league}_{season}.json"
 #find the saved JSON file
 
 with open(file_path, "r", encoding="utf-8") as file:
@@ -43,4 +43,6 @@ save_path.parent.mkdir(parents=True, exist_ok=True)
 #checks if the parent directory folder exists, and creates it if it doesn't
 
 player_data_df.to_csv(save_path, index=False)
+#convert data to a csv file, save it at the specified path, dont include our index column
+
 print(len(player_data_df))

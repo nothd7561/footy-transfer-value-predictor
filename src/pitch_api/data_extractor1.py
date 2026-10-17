@@ -5,6 +5,9 @@ import pandas as pd
 import json
 import requests
 
+#get the league ids from the API by sending a request
+
+
 project_dir = Path(__file__).resolve().parents[2]
 
 load_dotenv(project_dir / '.env')

@@ -11,7 +11,7 @@ project_dir = Path(__file__).resolve().parent.parent
 league = 'PL'  # Premier League
 season = 2025  # the season I want data from, so since 2025 its season 25/26
 
-file_path = project_dir / 'data' / 'raw_data' /f'teams_{league}_{season}.json'
+file_path = project_dir / 'data' / 'raw_data' /f'football_data_{league}_{season}.json'
 #assign the path/name to the file where the data will be stored
 
 url = f'https://api.football-data.org/v4/competitions/{league}/teams'
