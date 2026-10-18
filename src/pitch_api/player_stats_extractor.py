@@ -49,7 +49,7 @@ else:
     all_player_stats = {}
     #create an empty dictionary to eventually create a big JSON with all the matches in the league/season with player stats
 
-for match_id in match_ids[:3]:
+for match_id in match_ids[:10]:
     if match_id in all_player_stats:
                 continue
         #if a match was already extracted, skip it and move on

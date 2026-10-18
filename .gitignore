@@ -2,3 +2,4 @@
 __pycache__/
 .env
 .ipynb_checkpoints/
+data/pitch_api_data/raw_data/player_stats_*.json

@@ -16,7 +16,7 @@ sys.path.insert(0, str(file_dir))
 #our file dir points to the entire folder, to find the config file we have to convert the Path to a string
 #config is in the root, this script is two files deeper
 
-from config import LEAGUE_NAME, SEASON, MATCH_SEASON
+from config import LEAGUE_NAME, SEASON, MATCH_SEASON, COUNTRY_CODE
 
 input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / 'leagues.json'
 #path for the json raw file, which contains the league names and their corresponding IDs
@@ -34,7 +34,7 @@ with open(input_file_path, 'r', encoding='utf-8') as f:
 
 leagues = data['data']['leagues']
 for league in leagues:
-    if league['name'] == LEAGUE_NAME:
+    if league['name'] == LEAGUE_NAME and league['country_code'] == COUNTRY_CODE:
         league_id = league['id']
         break
 
