@@ -5,8 +5,9 @@ import pandas as pd
 import json
 import requests
 
-#get the league ids from the API by sending a request
 
+#get the league ids from the API by sending a request
+##only need to do this once
 
 project_dir = Path(__file__).resolve().parents[2]
 
@@ -22,12 +23,6 @@ url = "https://api.pitchapi.dev/v1/leagues"
 headers = {
     "X-API-KEY": api_key
 }
-
-response = requests.get(
-    url,
-    headers=headers,
-    timeout=30
-)
 
 file_path = project_dir / 'data' / 'pitch_api_data' / 'raw_data' / 'leagues.json'
 
@@ -61,7 +56,14 @@ for league in leagues:
 #extract the league names and their corresponding IDs from the API response and store them in a dictionary
 
 leagues_df = pd.DataFrame(league_ids.items(), columns=['League Name', 'League ID'])
-leagues_df.to_csv(project_dir / 'data' / 'pitch_api_data' / 'processed_data' / 'leagues.csv', index=False)
+
+csv_path = project_dir / 'data' / 'pitch_api_data' / 'processed_data' / 'leagues.csv'
+
+csv_path.parent.mkdir(parents=True, exist_ok=True)
+#makes sure progress is saved
+
+leagues_df.to_csv(csv_path, index=False)
+#convert df to csv
 
 
 

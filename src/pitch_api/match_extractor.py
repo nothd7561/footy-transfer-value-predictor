@@ -4,11 +4,19 @@ from pathlib import Path
 import json
 import requests
 from dotenv import load_dotenv, find_dotenv
+import sys
 
 ###extract the matches from the league id
 
+
 file_dir = Path(__file__).resolve().parents[2]
 #get the overall path of the file
+
+sys.path.insert(0, str(file_dir))
+#our file dir points to the entire folder, to find the config file we have to convert the Path to a string
+#config is in the root, this script is two files deeper
+
+from config import LEAGUE_NAME, SEASON, MATCH_SEASON
 
 input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / 'leagues.json'
 #path for the json raw file, which contains the league names and their corresponding IDs
@@ -17,24 +25,30 @@ load_dotenv(file_dir / '.env')
 api_key = os.getenv('api_key_pitch')
 #acquire api key from the .env file, which is not included in the repo for security reasons
 
+if not api_key:
+    raise ValueError("PitchAPI key not found in .env")
+
 with open(input_file_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
     #load the json file into a python dictionary
 
 leagues = data['data']['leagues']
 for league in leagues:
-    if league['name'] == 'Premier League':
+    if league['name'] == LEAGUE_NAME:
         league_id = league['id']
+        break
 
-season = '2025'
-#changed from 2025/2026
+if league_id is None:
+    raise ValueError(f"League not found: {LEAGUE_NAME}")
+#fallback if the naming convention is wrong
+
 
 url = f'https://api.pitchapi.dev/v1/leagues/{league_id}/matches'
 
 headers = {'X-API-KEY': api_key}
-params = {'season': season}
+params = {'season': MATCH_SEASON}
 
-save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'matches_{league_id}_{season.replace("/", "-")}.json'
+save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'matches_{LEAGUE_NAME}_{SEASON}.json'
 #establish the path for saving the matches data, replacing '/' with '-' in the season string to avoid issues with file naming
 #there might be issues since / is used for splitting paths
 
@@ -45,9 +59,9 @@ if save_path.exists():
     print('File found, already exists, lets load the data')
 else:
     response = requests.get(url, headers=headers, params=params, timeout=30)
-    #print("Status:", response.status_code)
-    #print("Response:", response.text)
-    #print("URL:", response.url)
+    print("Status:", response.status_code)
+    print("Response:", response.text)
+    print("URL:", response.url)
     response.raise_for_status()
 
     match_data = response.json()

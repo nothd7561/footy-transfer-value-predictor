@@ -1,0 +1,3 @@
+LEAGUE_NAME = "Premier League"
+SEASON = 2025
+MATCH_SEASON = '2025/2026'
