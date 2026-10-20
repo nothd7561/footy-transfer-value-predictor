@@ -115,3 +115,8 @@ with sqlite3.connect(db_path) as connection:
         if_exists='replace',
         index=False
     )
+
+
+#print(outfield_player_db.shape)
+#print(outfield_player_db.isna().sum().sort_values(ascending=False))
+#print(outfield_player_db.duplicated(['player_id', 'season']).sum())
