@@ -22,11 +22,24 @@ db_path.parent.mkdir(parents=True, exist_ok=True)
 
 df = pd.read_csv(input_file)
 #read the csv and store it into the df variable
+df['is_goalkeeper'] = df['saves'].notna()
+#pick out players with a non n/a saves
+
+df_played = df[df['minutes_played'] > 0].copy()
+#filter out only the players that have gotten game_time
+
+df_outfield = df_played[df_played['is_goalkeeper'] == False].copy()
+#return all the players that have is_goalkeeper as false; those are the actual field players
+#make a copy so that when we create new features, we don't need to worry about the status of the original
+
+df_goalie = df_played[df_played['is_goalkeeper'] == True].copy()
+#return all players that have is_gk as true
+
 
 with sqlite3.connect(db_path) as connection:
     #open up the path to the databse
-    df.to_sql(
-        'player_match_stats',
+    df_outfield.to_sql(
+        'outfield_season_stats',
         connection, #the connection between the python and the sqlite database
         if_exists='replace',
         index=False
@@ -34,6 +47,12 @@ with sqlite3.connect(db_path) as connection:
     #takes our dataframe and stores it into a sql table
     #if the table already exists, replace it
 
+    df_goalie.to_sql(
+        'goalie_stats',
+        connection,
+        if_exists='replace',
+        index=False
+    )
 query = """
 SELECT
     player_id,
@@ -42,16 +61,37 @@ SELECT
     SUM(minutes_played) AS total_minutes,
     SUM(goals) AS total_goals,
     SUM(assists) AS total_assists,
-    AVG(rating_title) AS avg_rating
-FROM player_match_stats
-WHERE minutes_played > 0
+    AVG(rating_title) AS avg_rating,
+
+    SUM(touches) AS total_touches,
+    SUM(accurate_passes) AS total_accurate_passes,
+    SUM(accurate_passes_total) AS total_pass_attempts,
+
+    SUM(chances_created) AS total_chances_created,
+    SUM(defensive_actions) AS total_defensive_actions,
+    SUM(interceptions) AS total_interceptions,
+    SUM(clearances) AS total_clearances,
+    SUM(recoveries) AS total_recoveries,
+    SUM("matchstats.headers.tackles") AS total_tackles
+
+FROM outfield_season_stats
 GROUP BY player_id
 """
-#the query for the sqlite database
+#the query for the sqlite database, implement the aggregation methods
 
 with sqlite3.connect(db_path) as connection1:
-    player_season_df = pd.read_sql_query(query, connection1)
+    outfield_player_db = pd.read_sql_query(query, connection1)
+    #actually execute the query
 
-player_season_df['goals_per90'] = (player_season_df['total_goals']/ player_season_df['total_minutes']
-    * 90
-)#calculate the number of goals per 90 minutes played
+outfield_player_db['season'] = SEASON
+
+outfield_player_db['goals_per90'] = (outfield_player_db['total_goals']/ outfield_player_db['total_minutes']
+    * 90)
+
+with sqlite3.connect(db_path) as connection:
+    outfield_player_db.to_sql(
+        'outfield_player_stats',
+        connection,
+        if_exists='replace',
+        index=False
+    )
