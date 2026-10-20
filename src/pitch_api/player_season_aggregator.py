@@ -88,6 +88,26 @@ outfield_player_db['season'] = SEASON
 outfield_player_db['goals_per90'] = (outfield_player_db['total_goals']/ outfield_player_db['total_minutes']
     * 90)
 
+per90_features = [
+    'total_goals',
+    'total_assists',
+    'total_chances_created',
+    'total_defensive_actions',
+    'total_interceptions',
+    'total_clearances',
+    'total_recoveries',
+    'total_tackles'
+]#make a list of all the stats that we want per 90 measure in
+
+for feature in per90_features:
+    outfield_player_db[f'{feature}_per90'] = (
+        outfield_player_db[feature]
+        / outfield_player_db['total_minutes']
+        * 90
+    )
+#loop over every per 90 feature, create a column for each per 90 calculation
+outfield_player_db['pass_accuracy'] = (outfield_player_db['total_accurate_passes'] / outfield_player_db['total_pass_attempts'])
+
 with sqlite3.connect(db_path) as connection:
     outfield_player_db.to_sql(
         'outfield_player_stats',
