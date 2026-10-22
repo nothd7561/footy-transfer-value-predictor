@@ -3,3 +3,8 @@ __pycache__/
 .env
 .ipynb_checkpoints/
 data/pitch_api_data/raw_data/player_stats_*.json
+#raw datasets
+data/transfermarkt/transfermarkt-datasets/
+
+# SQLite database
+database/*.db
