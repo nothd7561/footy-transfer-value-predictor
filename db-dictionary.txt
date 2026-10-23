@@ -1,0 +1,18 @@
+THIS TEXT FILE IS TO KEEP TRACK OF WHAT EACH TABLE IN THE DATABASE DOES AND WHERE IT COMES FROM
+
+goalie_stats: a collection of players with non N/A values under the feature 'saves'
+this table comes from filtering our PitchAPI raw JSON
+
+outfield_players: the collection of premier league outfield players and their stats
+for the 2025/2026 season
+this table comes from filtering our PitchAPI raw JSON for playes with NaN feature 'saves'
+
+outfield_season_stats: 
+
+transfermarkt_values: dataset of tens of thousands of players and their transfer history
+this comes from a dataset I found on github @: https://github.com/dcaribou/transfermarkt-datasets
+script origin : dataset_import.py 
+
+transfermarkt_players: dataset of around 50,000 players and their characteristics (age, doB, etc)
+also came from: https://github.com/dcaribou/transfermarkt-datasets
+script origin : dataset_import.py
