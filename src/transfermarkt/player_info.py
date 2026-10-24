@@ -40,18 +40,21 @@ FROM
     OVER(PARTITION BY player_id
     ORDER BY date DESC) as rn
         FROM merged_transfermarkt
-        WHERE date <= '2026-05-24')
+        WHERE date <= ?)
 WHERE rn == 1
 """
-
+season_cutoff = '2026-05-24'
 with sqlite3.connect(db_path) as reading:
-    grouped_merged_df = pd.read_sql_query(grouping_query, reading)
+    grouped_merged_df = pd.read_sql_query(grouping_query, reading,
+                                          params=(season_cutoff,))
     #execute the grouping query onto the merged transfermarkt dataset
     #41402 rows, 7 columns
-grouped_merged_df.rename({'name' : 'player_name'})
+grouped_merged_df = grouped_merged_df.rename(columns={'name' : 'player_name'})
 print(grouped_merged_df.head())
 
-table_name = f'outfield_player_stats_{LEAGUE_NAME}_{SEASON}'
+league = LEAGUE_NAME.replace(' ', '_')
+
+table_name = f'outfield_season_stats_{league}_{SEASON}'
 
 pitchapi_query = f"""
 SELECT player_id, player_name
@@ -62,4 +65,4 @@ with sqlite3.connect(db_path) as reading:
     #read the query, execute it on the outfieldplayerstats table
     #return a dataframe that has all the player ids and player names from the pl25/26 season dataset
 
-#merged_df = pd.merge(grouped_merged_df, pitchapi_names_df, on='')
+merged_df = pd.merge(grouped_merged_df, pitchapi_names_df, on='player_name', how='inner')
