@@ -43,6 +43,8 @@ FROM
         WHERE date <= ?)
 WHERE rn == 1
 """
+#returns one row per player, with their latest market value
+
 season_cutoff = '2026-05-24'
 with sqlite3.connect(db_path) as reading:
     grouped_merged_df = pd.read_sql_query(grouping_query, reading,
@@ -50,19 +52,62 @@ with sqlite3.connect(db_path) as reading:
     #execute the grouping query onto the merged transfermarkt dataset
     #41402 rows, 7 columns
 grouped_merged_df = grouped_merged_df.rename(columns={'name' : 'player_name'})
-print(grouped_merged_df.head())
+#print(grouped_merged_df.head())
 
 league = LEAGUE_NAME.replace(' ', '_')
 
 table_name = f'outfield_season_stats_{league}_{SEASON}'
 
 pitchapi_query = f"""
-SELECT player_id, player_name
+SELECT *
 FROM "{table_name}"
 """
+
 with sqlite3.connect(db_path) as reading:
     pitchapi_names_df = pd.read_sql_query(pitchapi_query,reading)
     #read the query, execute it on the outfieldplayerstats table
     #return a dataframe that has all the player ids and player names from the pl25/26 season dataset
 
-merged_df = pd.merge(grouped_merged_df, pitchapi_names_df, on='player_name', how='inner')
+merged_df = pd.merge(pitchapi_names_df,grouped_merged_df,  on='player_name', how='left')
+
+verified_ids = {
+    'p_07pCQk': 996897,    # Diego Gómez
+    'p_0C0UVV': 472423,    # Reece James
+    'p_0QA08f': 123682,    # Callum Wilson
+    'p_0Qmeai': 357565,    # Rodri
+    'p_0bJ5Go': 319859,    # Mathias Jensen
+    'p_0fZWyR': 204103,    # Adama Traoré
+    'p_12r3tb': 517894,    # Matheus Cunha
+    'p_179WVr': 735570,    # João Gomes
+    'p_1IqhK0': 466805,    # Nico González
+    'p_1qdPAY': 192765,    # Ben Davies
+    'p_2GOYVS': 800176,    # André
+    'p_2VIcoo': 61841,     # Adam Smith
+    'p_2dN9Ma': 432164,    # Igor Jesus
+    'p_2nzhKi': 1193867,   # Pedro Lima
+    'p_2siSV9': 435338,    # Gabriel
+    'p_2xAAfF': 1086258,   # Souza
+    'p_3QFLEl': 595809,    # Beto
+    'p_3jvO7d': 817665,    # Pablo
+    'p_48SKOM': 626724     # João Pedro
+}
+#the dictionary with all of the players that got repeated during the merge, because they share a name
+
+correct_matches = merged_df[
+    (~merged_df['player_id_x'].isin(verified_ids))| (merged_df['player_id_y'] == merged_df['player_id_x'].map(verified_ids))].copy()
+
+birth = pd.to_datetime(correct_matches['date_of_birth'])
+#convert the date of birth to date time format
+cutoff = pd.Timestamp(season_cutoff)
+#make a timestamp for the season cutoff
+
+correct_matches['age'] = ((cutoff - birth).dt.days / 365.25).astype('Int64')
+#calculate a players age based off the timestamps
+
+#Print(correct_matches['market_value_in_eur'].isna().sum())
+#print("Rows before:", len(merged_df))
+#print("Rows after:", len(correct_matches))
+
+#print(
+    #"Unique PitchAPI players:",
+    #correct_matches['player_id_x'].nunique())
