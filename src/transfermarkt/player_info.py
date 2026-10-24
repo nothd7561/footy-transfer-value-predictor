@@ -14,8 +14,8 @@ ON tp.player_id = tv.player_id
 """
 #merges the two tables together, has multiple rows for each player_id, based off their historical evaluations
 
-with sqlite3.connect(db_path) as connection:
-    merged_transfermarkt = pd.read_sql_query(query, connection)
+with sqlite3.connect(db_path) as reading:
+    merged_transfermarkt = pd.read_sql_query(query, reading)
     #execute the written query, store it in a dataframe object
 
 with sqlite3.connect(db_path) as connection:
@@ -28,7 +28,18 @@ with sqlite3.connect(db_path) as connection:
 
 grouping_query = """
 SELECT * 
-FROM merged_transfermarkt
-GROUP BY player_id
-HAVING MAX(date)
+FROM 
+    (SELECT *, ROW_NUMBER()
+    OVER(PARTITION BY player_id
+    ORDER BY date DESC) as rn
+        FROM merged_transfermarkt
+        WHERE date <= '2026-05-24')
+WHERE rn == 1
 """
+
+with sqlite3.connect(db_path) as reading:
+    grouped_merged_df = pd.read_sql_query(grouping_query, reading)
+    #execute the grouping query onto the merged transfermarkt dataset
+    #41402 rows, 7 columns
+
+print(grouped_merged_df.shape)
