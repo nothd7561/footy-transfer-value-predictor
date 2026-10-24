@@ -6,54 +6,54 @@ import sqlite3
 file_dir = Path(__file__).resolve().parents[2]
 
 sys.path.insert(0, str(file_dir))
-#our file dir points to the entire folder, to find the config file we have to convert the Path to a string
-#config is in the root, this script is two files deeper
 
 from config import LEAGUE_NAME, SEASON
 
-input_file = file_dir / 'data' / 'pitch_api_data' / 'processed_data' / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
-
-#df_played = df[(df['minutes_played'].notna())  & (df['minutes_played'] > 0)].copy()
-#create a copy of the original df, this one only with players that actually had some amount of gametime
+#Paths
+input_file = (
+    file_dir / 'data' / 'pitch_api_data' / 'processed_data'
+    / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
+)
 
 db_path = file_dir / 'database' / 'football.db'
 db_path.parent.mkdir(parents=True, exist_ok=True)
-#creates directory for me in case the directory wasn't already created
+
+#Generate table names based on league and season
+league = LEAGUE_NAME.replace(' ', '_')
+
+match_table = f'outfield_match_stats_{league}_{SEASON}'
+season_table = f'outfield_season_stats_{league}_{SEASON}'
+goalie_table = f'goalie_match_stats_{league}_{SEASON}'
 
 df = pd.read_csv(input_file)
-#read the csv and store it into the df variable
+
 df['is_goalkeeper'] = df['saves'].notna()
-#pick out players with a non n/a saves
+#identify goalkeepers by usingthe saves column
 
 df_played = df[df['minutes_played'] > 0].copy()
-#filter out only the players that have gotten game_time
+#keep only players with minutes played
 
+#Separate outfield players and goalkeepers
 df_outfield = df_played[df_played['is_goalkeeper'] == False].copy()
-#return all the players that have is_goalkeeper as false; those are the actual field players
-#make a copy so that when we create new features, we don't need to worry about the status of the original
-
 df_goalie = df_played[df_played['is_goalkeeper'] == True].copy()
-#return all players that have is_gk as true
-
 
 with sqlite3.connect(db_path) as connection:
-    #open up the path to the databse
     df_outfield.to_sql(
-        'outfield_season_stats',
-        connection, #the connection between the python and the sqlite database
-        if_exists='replace',
-        index=False
-    )
-    #takes our dataframe and stores it into a sql table
-    #if the table already exists, replace it
-
-    df_goalie.to_sql(
-        'goalie_stats',
+        match_table,
         connection,
         if_exists='replace',
         index=False
     )
-query = """
+
+    df_goalie.to_sql(
+        goalie_table,
+        connection,
+        if_exists='replace',
+        index=False
+    )
+#save the dataframes to sql tables
+
+query = f"""
 SELECT
     player_id,
     MAX(player_name) AS player_name,
@@ -74,19 +74,18 @@ SELECT
     SUM(recoveries) AS total_recoveries,
     SUM("matchstats.headers.tackles") AS total_tackles
 
-FROM outfield_season_stats
+FROM "{match_table}"
 GROUP BY player_id
 """
-#the query for the sqlite database, implement the aggregation methods
+#aggregate match values into season totals
 
-with sqlite3.connect(db_path) as connection1:
-    outfield_player_db = pd.read_sql_query(query, connection1)
-    #actually execute the query
+with sqlite3.connect(db_path) as connection:
+    outfield_player_db = pd.read_sql_query(query, connection)
+    #execute the query aggregation
 
 outfield_player_db['season'] = SEASON
+outfield_player_db['league'] = LEAGUE_NAME
 
-outfield_player_db['goals_per90'] = (outfield_player_db['total_goals']/ outfield_player_db['total_minutes']
-    * 90)
 
 per90_features = [
     'total_goals',
@@ -97,26 +96,32 @@ per90_features = [
     'total_clearances',
     'total_recoveries',
     'total_tackles'
-]#make a list of all the stats that we want per 90 measure in
+]#stats we want on per 90 
 
 for feature in per90_features:
     outfield_player_db[f'{feature}_per90'] = (
         outfield_player_db[feature]
         / outfield_player_db['total_minutes']
         * 90
-    )
-#loop over every per 90 feature, create a column for each per 90 calculation
-outfield_player_db['pass_accuracy'] = (outfield_player_db['total_accurate_passes'] / outfield_player_db['total_pass_attempts'])
+    )#calculate per 90 features by looping through the list
 
+outfield_player_db['pass_accuracy'] = (
+    outfield_player_db['total_accurate_passes']
+    / outfield_player_db['total_pass_attempts'].replace(0, float('nan'))
+)#calculate the passing accuracy for the players
+
+
+# Save the aggregated season-level data
 with sqlite3.connect(db_path) as connection:
     outfield_player_db.to_sql(
-        f'outfield_player_stats{LEAGUE_NAME}_{SEASON}',
+        season_table,
         connection,
         if_exists='replace',
         index=False
     )
 
-
-#print(outfield_player_db.shape)
-#print(outfield_player_db.isna().sum().sort_values(ascending=False))
-#print(outfield_player_db.duplicated(['player_id', 'season']).sum())
+with sqlite3.connect(db_path) as connection:
+    connection.execute("DROP TABLE IF EXISTS outfield_season_stats")
+    connection.execute("DROP TABLE IF EXISTS outfield_player_stats")
+    connection.execute("DROP TABLE IF EXISTS goalie_stats")
+    #drop the former tables that didn't have specified naming conventions
