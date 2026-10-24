@@ -110,7 +110,7 @@ outfield_player_db['pass_accuracy'] = (outfield_player_db['total_accurate_passes
 
 with sqlite3.connect(db_path) as connection:
     outfield_player_db.to_sql(
-        'outfield_player_stats',
+        f'outfield_player_stats{LEAGUE_NAME}_{SEASON}',
         connection,
         if_exists='replace',
         index=False

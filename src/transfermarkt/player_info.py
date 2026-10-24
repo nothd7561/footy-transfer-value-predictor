@@ -1,10 +1,17 @@
 import sqlite3
 from pathlib import Path
 import pandas as pd
+import sys
 
 file_dir = Path(__file__).resolve().parents[2]
 
 db_path = file_dir / 'database' / 'football.db'
+
+sys.path.insert(0, str(file_dir))
+#our file dir points to the entire folder, to find the config file we have to convert the Path to a string
+#config is in the root, this script is two files deeper
+
+from config import LEAGUE_NAME, SEASON
 
 query = """
 SELECT tp.player_id, tp.name, tp.date_of_birth, tp.height_in_cm,
@@ -41,5 +48,18 @@ with sqlite3.connect(db_path) as reading:
     grouped_merged_df = pd.read_sql_query(grouping_query, reading)
     #execute the grouping query onto the merged transfermarkt dataset
     #41402 rows, 7 columns
+grouped_merged_df.rename({'name' : 'player_name'})
+print(grouped_merged_df.head())
 
-print(grouped_merged_df.shape)
+table_name = f'outfield_player_stats_{LEAGUE_NAME}_{SEASON}'
+
+pitchapi_query = f"""
+SELECT player_id, player_name
+FROM "{table_name}"
+"""
+with sqlite3.connect(db_path) as reading:
+    pitchapi_names_df = pd.read_sql_query(pitchapi_query,reading)
+    #read the query, execute it on the outfieldplayerstats table
+    #return a dataframe that has all the player ids and player names from the pl25/26 season dataset
+
+#merged_df = pd.merge(grouped_merged_df, pitchapi_names_df, on='')

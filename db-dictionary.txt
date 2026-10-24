@@ -20,3 +20,7 @@ script origin : dataset_import.py
 transfermarkt_players: dataset of around 50,000 players and their characteristics (age, doB, etc)
 also came from: https://github.com/dcaribou/transfermarkt-datasets
 script origin : dataset_import.py
+
+merged_transfermarkt: dataset of the combination of transfermarkt_players and transfermarkt_values
+with only the features that we need
+script origin : player_info.py
