@@ -6,4 +6,9 @@ file_dir = Path(__file__).resolve().parents[2]
 
 db_path = file_dir / 'database' / 'football.db'
 
-
+query = """
+SELECT tp.player_id, tp.name, tp.date_of_birth, tp.height_in_cm, tp.contract_expiration_date,
+tv.market_value_in_eur, tv.date
+FROM transfermarkt_players tp INNER JOIN transfermarkt_values tv 
+ON tp.player_id = tv.player_id
+"""

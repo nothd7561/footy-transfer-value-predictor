@@ -9,6 +9,10 @@ this table comes from filtering our PitchAPI raw JSON for playes with NaN featur
 
 outfield_season_stats: 
 
+player_match_stats: dataset of all the players match stats for every match in the premier league 25/26 season
+this table comes from looping through every match id from the premier league for 25/26
+
+
 transfermarkt_values: dataset of tens of thousands of players and their transfer history
 this comes from a dataset I found on github @: https://github.com/dcaribou/transfermarkt-datasets
 script origin : dataset_import.py 
