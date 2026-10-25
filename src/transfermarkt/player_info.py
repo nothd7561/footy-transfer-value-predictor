@@ -292,3 +292,16 @@ correct_matches['valuation_age_days'] = (
 ).dt.days
 
 final_table = f'player_ml_data_{league}_{SEASON}'
+#name for the final table filled with the data
+
+ml_data = correct_matches.dropna(
+    subset=['market_value_in_eur']
+).copy() #drops the 37 players with market values not in our range
+#makes a copy so that the original 497 isn't affected
+
+with sqlite3.connect(db_path) as connection:
+    ml_data.to_sql(
+        final_table,
+        connection,
+        if_exists='replace',
+        index=False)
