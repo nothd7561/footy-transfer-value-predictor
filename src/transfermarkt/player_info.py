@@ -102,6 +102,24 @@ cutoff = pd.Timestamp(season_cutoff)
 #make a timestamp for the season cutoff
 
 correct_matches['age'] = ((cutoff - birth).dt.days / 365.25).astype('Int64')
+#make calculations for finding age
+
+correct_matches['date'] = pd.to_datetime(correct_matches['date'])
+
+
+correct_matches['valuation_age_days'] = (
+    cutoff - correct_matches['date']
+).dt.days
+
+final_table = f'player_ml_data_{league}_{SEASON}'
+#
+
+with sqlite3.connect(db_path) as connection:
+    correct_matches.to_sql(
+        final_table,
+        connection,
+        if_exists='replace',
+        index=False)
 #calculate a players age based off the timestamps
 
 #Print(correct_matches['market_value_in_eur'].isna().sum())
