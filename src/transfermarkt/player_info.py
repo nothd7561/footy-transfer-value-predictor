@@ -49,7 +49,6 @@ with sqlite3.connect(db_path) as connection:
         connection,
         if_exists='replace',
         index=False)
-#print(merged_transfermarkt.head())
 
 grouping_query = """
 SELECT * 
@@ -70,7 +69,6 @@ with sqlite3.connect(db_path) as reading:
     #execute the grouping query onto the merged transfermarkt dataset
     #41402 rows, 7 columns
 grouped_merged_df = grouped_merged_df.rename(columns={'name' : 'player_name'})
-#print(grouped_merged_df.head())
 
 league = LEAGUE_NAME.replace(' ', '_')
 
@@ -127,13 +125,6 @@ verified_ids = {
 
 correct_matches = merged_df[
     (~merged_df['player_id_pitch'].isin(verified_ids))| (merged_df['player_id_tm'] == merged_df['player_id_pitch'].map(verified_ids))].copy()
-
-duplicates = correct_matches[
-    correct_matches.duplicated(
-        subset='player_id_pitch',
-        keep=False
-    )
-]
 
 fuzzy_verified_ids = {
     'p_0i4lOF': 134270,    # Daniel Burn -> Dan Burn
@@ -194,6 +185,53 @@ for pitch_id, tm_id in fuzzy_verified_ids.items():
             tm_player.iloc[0][column]
         )
 
+#find the first market valuation recorded after the season ended
+post_season_query = """
+SELECT player_id, market_value_in_eur, date
+FROM (
+    SELECT player_id, market_value_in_eur, date,
+    ROW_NUMBER() OVER (
+        PARTITION BY player_id
+        ORDER BY date ASC
+    ) AS rn
+    FROM transfermarkt_values
+    WHERE date > ? AND date <= ?
+)
+WHERE rn = 1
+"""
+
+season_end = '2026-05-24'
+valuation_deadline = '2026-07-31'
+
+with sqlite3.connect(db_path) as connection:
+    post_season_values = pd.read_sql_query(
+        post_season_query,
+        connection,
+        params=(season_end, valuation_deadline)
+    )
+
+#remove the old valuations, since they were recorded before the season ended
+correct_matches = correct_matches.drop(
+    columns=['market_value_in_eur', 'date']
+)
+
+#match the post-season valuations using the transfermarkt player ids
+correct_matches = pd.merge(
+    correct_matches,
+    post_season_values,
+    left_on='player_id_tm',
+    right_on='player_id',
+    how='left',
+    validate='many_to_one'
+)
+
+correct_matches = correct_matches.drop(columns=['player_id'])
+
+#check how many players have a post-season market valuation
+print("Total players:", len(correct_matches))
+print("Post-season valuations:", correct_matches['market_value_in_eur'].notna().sum())
+print("Missing valuations:", correct_matches['market_value_in_eur'].isna().sum())
+
 #find the players that still have missing market values after applying the known matches
 missing_players = correct_matches[
     correct_matches['market_value_in_eur'].isna()
@@ -238,10 +276,6 @@ fuzzy_suggestions_df = pd.DataFrame(
 )
 #create a dataframe to store our fuzzy name suggestions with both player ids, so that we can review them for future seasons
 
-print("Total rows:", len(correct_matches))
-print("Unique players:", correct_matches['player_id_pitch'].nunique())
-print("Missing market values:", correct_matches['market_value_in_eur'].isna().sum())
-
 birth = pd.to_datetime(correct_matches['date_of_birth'])
 #convert the date of birth to date time format
 cutoff = pd.Timestamp(season_cutoff)
@@ -258,15 +292,3 @@ correct_matches['valuation_age_days'] = (
 ).dt.days
 
 final_table = f'player_ml_data_{league}_{SEASON}'
-#
-
-
-#calculate a players age based off the timestamps
-
-#Print(correct_matches['market_value_in_eur'].isna().sum())
-#print("Rows before:", len(merged_df))
-#print("Rows after:", len(correct_matches))
-
-#print(
-    #"Unique PitchAPI players:",
-    #correct_matches['player_id_x'].nunique())
