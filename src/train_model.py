@@ -42,6 +42,29 @@ features = [
     'total_tackles',
     'pass_accuracy']
 
-x = df[features] #our x features
+x_features = df[features] #our x features
 
-y = df['market_value_in_eur'] #our y feature(what we want to predict)
+y_features = df['market_value_in_eur'] #our y feature(what we want to predict)
+
+#print(x.isna().sum())
+#look for missing values in features to consider imputation methods
+
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
+
+x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
+                                                    test_size = 0.2,
+                                                    train_size = 0.8,
+                                                    random_state = 42)
+
+random_forest = RandomForestRegressor()
+#store object into a variable
+
+numerical_processor = Pipeline([('imputing', SimpleImputer(strategy='mean'))])
+#create a pipeline for imputing misisng values with mean imputation
+
+regression = Pipeline([('imputer', numerical_processor),
+                       ('regressor'), random_forest(n_estimators=100, random_state=32)])
+#create the pipeline for the regression model, including the randomforest and imputation
