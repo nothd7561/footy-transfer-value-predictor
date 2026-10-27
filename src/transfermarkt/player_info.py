@@ -31,6 +31,18 @@ sys.path.insert(0, str(file_dir))
 
 from config import LEAGUE_NAME, SEASON
 
+season_end_dates = {
+    2023: '2024-05-19',
+    2024: '2025-05-25',
+    2025: '2026-05-24'
+}
+#the final match date of each premier league season
+
+season_end = season_end_dates[SEASON]
+season_cutoff = season_end
+valuation_deadline = f'{SEASON + 1}-07-31'
+#use the correct valuation window based on our selected season
+
 query = """
 SELECT tp.player_id, tp.name, tp.date_of_birth, tp.height_in_cm,
 tv.market_value_in_eur, tv.date, tp.sub_position
@@ -62,12 +74,11 @@ WHERE rn == 1
 """
 #returns one row per player, with their latest market value
 
-season_cutoff = '2026-05-24'
+
 with sqlite3.connect(db_path) as reading:
     grouped_merged_df = pd.read_sql_query(grouping_query, reading,
                                           params=(season_cutoff,))
     #execute the grouping query onto the merged transfermarkt dataset
-    #41402 rows, 7 columns
 grouped_merged_df = grouped_merged_df.rename(columns={'name' : 'player_name'})
 
 league = LEAGUE_NAME.replace(' ', '_')
@@ -82,7 +93,7 @@ FROM "{table_name}"
 with sqlite3.connect(db_path) as reading:
     pitchapi_names_df = pd.read_sql_query(pitchapi_query,reading)
     #read the query, execute it on the outfieldplayerstats table
-    #return a dataframe that has all the player ids and player names from the pl25/26 season dataset
+    #return a dataframe with player ids and names from the selected season
 
 pitchapi_names_df['clean_name'] = (
     pitchapi_names_df['player_name'].apply(clean_name))
@@ -120,6 +131,24 @@ verified_ids = {
     'p_48SKOM': 626724,    # João Pedro
     'p_1ivJgM': 206040,    # Raúl Jiménez
     'p_4apwGi': 345911,    # Ladislav Krejčí
+    #2023/24 premier league duplicate name matches
+    'p_1m6yay': 646658,    # Aaron Ramsey
+    'p_074Ebr': 533086,    # Amadou Diallo
+    'p_2nvpAR': 221025,    # André Gomes
+    'p_1IIuQu': 602105,    # Antony
+    'p_3xZuOY': 808509,    # Danilo
+    'p_1OgyF5': 181778,    # Emerson
+    'p_2B63Xc': 156501,    # Felipe
+    'p_2whyrf': 537598,    # Fábio Vieira
+    'p_49OZVg': 102017,    # Jorginho
+    'p_3cmo8f': 480692,    # Luis Díaz
+    'p_1eAcpC': 314210,    # Tom Davies
+    'p_1SSVHn': 468249,    # Vitinho
+    'p_3bDMsO': 52769,    # Willian
+    'p_2wgk1K': 193098,    # Álex Moreno
+        #2024/25 premier league duplicate name matches
+    'p_1uwaOo': 695454,    # Chiquinho
+    'p_02Tj1F': 447995,    # Ross Stewart
 }
 #the dictionary with all of the players that got repeated during the merge, because they share a name
 
@@ -153,22 +182,24 @@ fuzzy_verified_ids = {
 
 for pitch_id, tm_id in fuzzy_verified_ids.items():
 
+    player_index = correct_matches[correct_matches['player_id_pitch'] == pitch_id].index
+    #find the corresponding PitchAPI player
+
+    if len(player_index) == 0:
+        continue
+
+    if len(player_index) > 1:
+        print(f"there were multiple rows found for {pitch_id}")
+        continue
+    #this block of code accounts for players that we found were missing in one season, but present in another
+
     #find the corresponding Transfermarkt player
     tm_player = grouped_merged_df[
         grouped_merged_df['player_id'] == tm_id
     ]
 
     if tm_player.empty:
-        print(f"No Transfermarkt valuation found for {tm_id}")
-        continue
-
-    #find the corresponding PitchAPI player
-    player_index = correct_matches[
-        correct_matches['player_id_pitch'] == pitch_id
-    ].index
-
-    if len(player_index) != 1:
-        print(f"Unexpected number of PitchAPI rows for {pitch_id}")
+        print(f"No Transfermarkt player found for {pitch_id} (TM ID {tm_id})")
         continue
 
     #copy Transfermarkt information into the existing row
@@ -201,8 +232,6 @@ FROM (
 WHERE rn = 1
 """
 
-season_end = '2026-05-24'
-valuation_deadline = '2026-07-31'
 
 with sqlite3.connect(db_path) as connection:
     post_season_values = pd.read_sql_query(
@@ -228,7 +257,30 @@ correct_matches = pd.merge(
 
 correct_matches = correct_matches.drop(columns=['player_id'])
 
+#check for players matched to multiple Transfermarkt records
+#only print details if we still have ambiguous matches to resolve
+duplicates = correct_matches[
+    correct_matches.duplicated(subset=['player_id_pitch'], keep=False)
+]
+
+if not duplicates.empty:
+    print("Unresolved duplicate player matches:")
+    print(
+        duplicates[
+            [
+                'player_id_pitch',
+                'player_name_pitch',
+                'player_id_tm',
+                'date_of_birth',
+                'sub_position',
+                'height_in_cm'
+            ]
+        ].sort_values('player_name_pitch').to_string(index=False)
+    )
+    raise ValueError("Resolve duplicate player matches before saving the ML table")
+
 #check how many players have a post-season market valuation
+print(f"Season: {SEASON}/{SEASON + 1}")
 print("Total players:", len(correct_matches))
 print("Post-season valuations:", correct_matches['market_value_in_eur'].notna().sum())
 print("Missing valuations:", correct_matches['market_value_in_eur'].isna().sum())
@@ -289,7 +341,7 @@ correct_matches['date'] = pd.to_datetime(correct_matches['date'])
 
 
 correct_matches['valuation_age_days'] = (
-    cutoff - correct_matches['date']
+    correct_matches['date'] - cutoff
 ).dt.days
 
 final_table = f'player_ml_data_{league}_{SEASON}'
@@ -297,8 +349,8 @@ final_table = f'player_ml_data_{league}_{SEASON}'
 
 ml_data = correct_matches.dropna(
     subset=['market_value_in_eur']
-).copy() #drops the 37 players with market values not in our range
-#makes a copy so that the original 497 isn't affected
+).copy() #drops players without a market value in our post-season range
+#makes a copy so that the original dataframe isn't affected
 
 with sqlite3.connect(db_path) as connection:
     ml_data.to_sql(
@@ -307,4 +359,5 @@ with sqlite3.connect(db_path) as connection:
         if_exists='replace',
         index=False)
 
-print(ml_data['sub_position'].value_counts(dropna=False))
+
+print(f"saved player records to {final_table}")

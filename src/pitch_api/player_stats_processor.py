@@ -12,7 +12,7 @@ sys.path.insert(0, str(file_dir))
 from config import LEAGUE_NAME, SEASON, MATCH_SEASON
 
 
-input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'{MATCH_SEASON}' / f'player_stats_{LEAGUE_NAME}_{SEASON}.json'
+input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / str(SEASON) / f'player_stats_{LEAGUE_NAME}_{SEASON}.json'
 
 with open(input_file_path, 'r', encoding='utf-8') as f:
     player_stats_data = json.load(f)
@@ -55,7 +55,7 @@ for match_id, match_data in player_stats_data.items():
 
 stats_df = pd.DataFrame(player_data)
 
-output_path = file_dir / 'data' / 'pitch_api_data' / 'processed_data' / str(MATCH_SEASON) / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
+output_path = file_dir / 'data' / 'pitch_api_data' / 'processed_data' / str(SEASON) / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
 #establish the path for saving our processed player statistics
 
 output_path.parent.mkdir(parents=True, exist_ok=True)

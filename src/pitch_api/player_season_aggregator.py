@@ -12,7 +12,7 @@ from config import LEAGUE_NAME, SEASON, MATCH_SEASON
 #Paths
 input_file = (
     file_dir / 'data' / 'pitch_api_data' / 'processed_data'
-    / f'{MATCH_SEASON}' / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
+    / str(SEASON) / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
 )
 
 db_path = file_dir / 'database' / 'football.db'

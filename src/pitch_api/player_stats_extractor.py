@@ -17,7 +17,7 @@ sys.path.insert(0, str(file_dir))
 
 from config import LEAGUE_NAME, SEASON, MATCH_SEASON
 
-input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'{MATCH_SEASON}'/ f'matches_{LEAGUE_NAME}_{SEASON}.json'
+input_file_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / str(SEASON) / f'matches_{LEAGUE_NAME}_{SEASON}.json'
 
 with open(input_file_path, 'r', encoding='utf-8') as f:
     match_data = json.load(f)
@@ -40,7 +40,7 @@ if not api_key:
 
 headers = {'X-API-KEY' : api_key}
 
-save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'{MATCH_SEASON}' / f'player_stats_{LEAGUE_NAME}_{SEASON}.json'
+save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / str(SEASON) / f'player_stats_{LEAGUE_NAME}_{SEASON}.json'
 
 if save_path.exists():
     with open(save_path, 'r', encoding='utf-8') as f:
@@ -68,9 +68,14 @@ for match_id in match_ids:
     save_path.parent.mkdir(parents=True, exist_ok=True)
     #save progress with each download/extraction
 
-    with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(all_player_stats, f, indent=4)
-        #make that dictionary into a json file for saving
+    temp_path = save_path.with_suffix('.tmp')
+    #create a temporary file so we dont directly overwrite our existing json
+
+    with open(temp_path, 'w', encoding='utf-8') as f:
+        json.dump(all_player_stats, f)
+
+    os.replace(temp_path, save_path)
+    #replace our old json with the updated one after successfully saving        
     print(f'Got {match_id} extracted!')
 
 print('Finished player stats extraction')
