@@ -47,6 +47,64 @@ For the initial 2025–26 dataset, target valuations were selected from a window
 
 Files and database tables use season-specific names so additional seasons can be added without replacing existing seasons.
 
+## Multi-Season Dataset Expansion
+
+After completing the initial model using the 2025–26 Premier League season, the dataset was expanded to include the 2023–24 and 2024–25 seasons.
+
+The same data collection and processing pipeline was reused across all three seasons. Each season's match-level player statistics were collected through PitchAPI, aggregated into season-level observations, and matched with historical Transfermarkt market valuations.
+
+### Dataset Summary
+
+| Season | Outfield Players | Players with Valuations | Coverage |
+|---|---:|---:|---:|
+| 2023–24 | 530 | 482 | 90.9% |
+| 2024–25 | 518 | 482 | 93.1% |
+| 2025–26 | 497 | 460 | 92.6% |
+| **Total** | **1,545** | **1,424** | **92.2%** |
+
+The expanded dataset contains **1,424 labeled player-season observations**, compared with 460 in the original dataset.
+
+Players can appear in multiple seasons, with each season representing a separate observation.
+
+### Data Integration and Validation
+
+Combining PitchAPI and Transfermarkt required resolving differences in player names and identifiers.
+
+The matching process includes:
+
+- Normalizing player names by converting them to lowercase and removing accents.
+- Matching records across data sources using normalized names.
+- Resolving ambiguous names using manually verified player IDs.
+- Using RapidFuzz to generate candidate matches for unmatched players.
+- Validating that each PitchAPI player appears only once per season.
+- Excluding players without market valuations in the selected post-season window.
+
+Each season uses its own valuation window based on the Premier League's final match date, aligning player performance statistics with subsequent market valuations.
+
+### Data Quality Challenges
+
+During the expansion, multiple Transfermarkt players were found to share identical or similar names. For example, players named Antony, Danilo, and Jorginho initially matched multiple Transfermarkt records.
+
+These ambiguous matches were reviewed using player IDs, dates of birth, positions, and other available information.
+
+Verified mappings were reused across seasons to improve the consistency of the matching process.
+
+The pipeline was also updated to automatically identify unresolved duplicate matches, preventing ambiguous records from entering the final machine learning dataset.
+
+### Next Steps
+
+The expanded dataset will be used to investigate whether additional historical training data improves market-value predictions.
+
+The next experiment will:
+
+1. Combine the three season-level datasets.
+2. Train the Random Forest model using the 2023–24 and 2024–25 seasons.
+3. Evaluate the model using 2025–26 as a chronological holdout.
+4. Compare performance against the initial single-season experiment.
+5. Analyze prediction errors and document model limitations.
+
+The goal is to evaluate how well historical player performance generalizes to a subsequent Premier League season.
+
 ## Model Features
 
 | Feature | Description |
