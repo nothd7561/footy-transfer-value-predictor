@@ -51,6 +51,7 @@ y_features = df['market_value_in_eur'] #our y feature(what we want to predict)
 
 from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
@@ -86,7 +87,7 @@ for leaf in leaf_sizes:
         'rmse': 'neg_root_mean_squared_error',
         'r2': 'r2'
     })
-    print(f"Leaf Size: {leaf}, CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
+    #print(f"Leaf Size: {leaf}, CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
 
 
 
