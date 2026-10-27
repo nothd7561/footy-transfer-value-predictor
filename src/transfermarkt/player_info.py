@@ -33,7 +33,7 @@ from config import LEAGUE_NAME, SEASON
 
 query = """
 SELECT tp.player_id, tp.name, tp.date_of_birth, tp.height_in_cm,
-tv.market_value_in_eur, tv.date, tp.position
+tv.market_value_in_eur, tv.date, tp.sub_position
 FROM transfermarkt_players tp INNER JOIN transfermarkt_values tv 
 ON tp.player_id = tv.player_id
 """
@@ -176,7 +176,7 @@ for pitch_id, tm_id in fuzzy_verified_ids.items():
         'player_id',
         'date_of_birth',
         'height_in_cm',
-        'position',
+        'sub_position',
         'market_value_in_eur',
         'date'
     ]:
@@ -307,4 +307,4 @@ with sqlite3.connect(db_path) as connection:
         if_exists='replace',
         index=False)
 
-print(ml_data['position'].value_counts(dropna=False))
+print(ml_data['sub_position'].value_counts(dropna=False))

@@ -42,8 +42,10 @@ numerical_features = [
     'total_tackles_per90',
     'pass_accuracy'
 ]
-categorical_features = ['position']
-x_features = df[features] #our x features
+categorical_features = ['sub_position']
+features = numerical_features + categorical_features #our x features
+
+x_features = df[features]
 
 y_features = df['market_value_in_eur'] #our y feature(what we want to predict)
 
@@ -58,13 +60,17 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
+import numpy as np
+from sklearn.model_selection import cross_val_predict, KFold
+
 
 x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
                                                     test_size = 0.2,
                                                     train_size = 0.8,
                                                     random_state = 42)
 
-
+y_train_log = np.log(y_train)
+#log transform our y training values (the euro prices)
 
 numerical_processor = Pipeline([('imputing', SimpleImputer(strategy='mean'))])
 #create a pipeline for imputing misisng values with mean imputation
@@ -92,22 +98,22 @@ model = Pipeline([('preprocessor', preprocessor),
 #create the pipeline for the regression model, including the randomforest and imputation
 #we already tuned our hyperparameters
 
-cv_results = cross_validate(model, x_train, y_train, cv=5,
-                            scoring={'mae': 'neg_mean_absolute_error',
-                            'rmse': 'neg_root_mean_squared_error',
-                            'r2': 'r2'})
-#run the cross validation models for 5 folds 
+log_predictions = cross_val_predict(
+    model,
+    x_train,
+    y_train_log,
+    cv=5)
 
-model.fit(x_train, y_train)
-#train our model on the data
-print(f"CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
-rf = model.named_steps['regressor']
+#convert predictions back into euros
+predictions_eur = np.exp(log_predictions)
+print(f"CV MAE: €{mean_absolute_error(y_train, predictions_eur):,.2f}")
+print(f"CV RMSE: €{root_mean_squared_error(y_train, predictions_eur):,.2f}")
+print(f"CV R²: {r2_score(y_train, predictions_eur):.4f}")
 
-importance_df = pd.DataFrame({
-    'feature': features,
-    'importance': rf.feature_importances_
-}).sort_values('importance', ascending=False)
+#model.fit(x_train, y_train_log)
+#train the model
 
-print(importance_df)
+
+
 
 
