@@ -28,7 +28,7 @@ match_ids = []
 
 league_matches = match_data['data']['matches']
 for match in league_matches:
-    match_ids.append(match['id'])
+    match_ids.append(str(match['id']))
     #get a list of all the match ids so that we can loop through them for the stats request
 
 load_dotenv(file_dir / '.env')
