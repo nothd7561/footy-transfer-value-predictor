@@ -73,22 +73,31 @@ depths = [3,5,7,9,11,13,15]
 leaf_sizes = [3,5,7,9,11,13,15]
 #a leaf size of 3 produced our lowest rmse
 
-for leaf in leaf_sizes:
-    model = Pipeline([('imputer', numerical_processor),
+
+model = Pipeline([('imputer', numerical_processor),
                        ('regressor', RandomForestRegressor(n_estimators=100,
                                                            max_depth=9,
-                                                           min_samples_leaf=leaf,
+                                                           min_samples_leaf=3,
                                                            random_state=42))])
 #create the pipeline for the regression model, including the randomforest and imputation
+#we already tuned our hyperparameters
 
-    cv_results = cross_validate(model, x_train, y_train, cv=5,
-                                scoring={
-        'mae': 'neg_mean_absolute_error',
-        'rmse': 'neg_root_mean_squared_error',
-        'r2': 'r2'
-    })
-    #print(f"Leaf Size: {leaf}, CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
+cv_results = cross_validate(model, x_train, y_train, cv=5,
+                            scoring={'mae': 'neg_mean_absolute_error',
+                            'rmse': 'neg_root_mean_squared_error',
+                            'r2': 'r2'})
+#run the cross validation models for 5 folds 
 
+model.fit(x_train, y_train)
+#train our model on the data
+print(f"CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
+rf = model.named_steps['regressor']
 
+importance_df = pd.DataFrame({
+    'feature': features,
+    'importance': rf.feature_importances_
+}).sort_values('importance', ascending=False)
+
+print(importance_df)
 
 
