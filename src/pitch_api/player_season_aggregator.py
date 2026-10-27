@@ -7,12 +7,12 @@ file_dir = Path(__file__).resolve().parents[2]
 
 sys.path.insert(0, str(file_dir))
 
-from config import LEAGUE_NAME, SEASON
+from config import LEAGUE_NAME, SEASON, MATCH_SEASON
 
 #Paths
 input_file = (
     file_dir / 'data' / 'pitch_api_data' / 'processed_data'
-    / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
+    / f'{MATCH_SEASON}' / f'player_stats_{LEAGUE_NAME}_{SEASON}.csv'
 )
 
 db_path = file_dir / 'database' / 'football.db'

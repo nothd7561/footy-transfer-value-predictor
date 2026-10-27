@@ -48,7 +48,7 @@ url = f'https://api.pitchapi.dev/v1/leagues/{league_id}/matches'
 headers = {'X-API-KEY': api_key}
 params = {'season': MATCH_SEASON}
 
-save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'matches_{LEAGUE_NAME}_{SEASON}.json'
+save_path = file_dir / 'data' / 'pitch_api_data' / 'raw_data' / f'{MATCH_SEASON}' / f'matches_{LEAGUE_NAME}_{SEASON}.json'
 #establish the path for saving the matches data, replacing '/' with '-' in the season string to avoid issues with file naming
 #there might be issues since / is used for splitting paths
 
