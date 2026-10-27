@@ -53,6 +53,7 @@ from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
 
 x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
                                                     test_size = 0.2,
@@ -64,18 +65,29 @@ x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
 numerical_processor = Pipeline([('imputing', SimpleImputer(strategy='mean'))])
 #create a pipeline for imputing misisng values with mean imputation
 
-model = Pipeline([('imputer', numerical_processor),
-                       ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])
+depths = [3,5,7,9,11,13,15]
+#so far, 9 returned the lowest rmse around 13.8mil
+#the rmse hit a dip on 9 
+
+leaf_sizes = [3,5,7,9,11,13,15]
+#a leaf size of 3 produced our lowest rmse
+
+for leaf in leaf_sizes:
+    model = Pipeline([('imputer', numerical_processor),
+                       ('regressor', RandomForestRegressor(n_estimators=100,
+                                                           max_depth=9,
+                                                           min_samples_leaf=leaf,
+                                                           random_state=42))])
 #create the pipeline for the regression model, including the randomforest and imputation
 
-cv_results = cross_validate(model, x_train, y_train, cv=5,
+    cv_results = cross_validate(model, x_train, y_train, cv=5,
                                 scoring={
         'mae': 'neg_mean_absolute_error',
         'rmse': 'neg_root_mean_squared_error',
         'r2': 'r2'
-    }
-)
+    })
+    print(f"Leaf Size: {leaf}, CV RMSE: {-cv_results['test_rmse'].mean():,.2f}")
 
-print("CV MAE:", -cv_results['test_mae'].mean())
-print("CV RMSE:", -cv_results['test_rmse'].mean())
-print("CV R²:", cv_results['test_r2'].mean())
+
+
+
