@@ -28,20 +28,21 @@ with sqlite3.connect(db_path) as connection:
 column_names = df.columns.to_list()
 #print(column_names)
 
-features = [
+numerical_features = [
     'age',
     'height_in_cm',
     'appearances',
     'total_minutes',
-    'total_goals',
-    'total_assists',
+    'total_goals_per90',
+    'total_assists_per90',
     'avg_rating',
-    'total_chances_created',
-    'total_defensive_actions',
-    'total_interceptions',
-    'total_tackles',
-    'pass_accuracy']
-
+    'total_chances_created_per90',
+    'total_defensive_actions_per90',
+    'total_interceptions_per90',
+    'total_tackles_per90',
+    'pass_accuracy'
+]
+categorical_features = ['position']
 x_features = df[features] #our x features
 
 y_features = df['market_value_in_eur'] #our y feature(what we want to predict)
@@ -55,6 +56,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
 x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
                                                     test_size = 0.2,
@@ -66,6 +69,9 @@ x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
 numerical_processor = Pipeline([('imputing', SimpleImputer(strategy='mean'))])
 #create a pipeline for imputing misisng values with mean imputation
 
+categorical_processor = Pipeline([('imputing', SimpleImputer(strategy='most_frequent')),
+                                  ('encoding', OneHotEncoder(handle_unknown='ignore'))])
+
 depths = [3,5,7,9,11,13,15]
 #so far, 9 returned the lowest rmse around 13.8mil
 #the rmse hit a dip on 9 
@@ -73,8 +79,12 @@ depths = [3,5,7,9,11,13,15]
 leaf_sizes = [3,5,7,9,11,13,15]
 #a leaf size of 3 produced our lowest rmse
 
+preprocessor = ColumnTransformer([
+    ('numeric', numerical_processor, numerical_features),
+    ('category', categorical_processor, categorical_features)
+])
 
-model = Pipeline([('imputer', numerical_processor),
+model = Pipeline([('preprocessor', preprocessor),
                        ('regressor', RandomForestRegressor(n_estimators=100,
                                                            max_depth=9,
                                                            min_samples_leaf=3,
