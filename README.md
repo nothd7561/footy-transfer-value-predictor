@@ -5,7 +5,11 @@ A machine learning project where I try to predict a football player's **Transfer
 
 I wanted to build something that involved more than just downloading a clean dataset and fitting a model. Most of this project involved collecting match data, combining it with Transfermarkt valuations, figuring out why players weren't matching properly, and then experimenting with different regression models. 
 
-I created this because I saw this as an idea on Instagram, and I needed something to test what I've learned so far. I did use AI for some parts, but everything from the entire pipeline and process of this project was created by me.
+I created this because I saw this as an idea on Instagram, and I needed something to test what I've learned so far. 
+
+AI Usage Disclosure: I used AI as a supporting tool throughout parts of this project, mainly for creating visualizations (including the interactive scatterplot), setting up configuration files, troubleshooting Git issues, and debugging. The overall project structure, data pipeline, feature engineering, model experimentation, and interpretation of the results were driven by my own decisions and understanding.
+
+PS: Most of this README was created by AI
 
 **Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
