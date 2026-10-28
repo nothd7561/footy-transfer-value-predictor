@@ -1,146 +1,122 @@
+
 # Football Transfer Value Predictor
 
-A machine learning project that estimates football players' market values using season-level performance statistics, player characteristics, and positional data.
+A machine learning project where I try to predict a football player's **Transfermarkt market value after a Premier League season**, using their performances during that season.
 
-The project builds a data pipeline from **PitchAPI** match statistics and historical **Transfermarkt** market valuations, stores processed data in **SQLite**, and trains regression models with **scikit-learn**.
+I wanted to build something that involved more than just downloading a clean dataset and fitting a model. Most of this project involved collecting match data, combining it with Transfermarkt valuations, figuring out why players weren't matching properly, and then experimenting with different regression models.
 
-> **Status:** Initial Premier League model built and evaluated. Currently expanding the dataset to additional seasons.
+**Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
 ## Project Goals
 
-- Collect and process football match statistics across Premier League seasons.
-- Match player performance records with historical market valuations.
-- Engineer features such as goals, assists, and tackles per 90 minutes.
-- Compare regression methods and evaluate prediction errors.
-- Investigate whether additional seasons and contextual features improve generalization.
+- Build a working pipeline from raw football data to a machine learning dataset.
+- Use player statistics, age, and position to estimate post-season market values.
+- Compare models and feature choices instead of relying on one training run.
+- Understand *where* the model makes mistakes, not just report an accuracy metric.
+
+This predicts **market valuations, not actual transfer fees**. For example, the 2025–26 inputs are performances from that season, and the labels are Transfermarkt valuations recorded after the season ended (through July 2026). The model does **not** forecast values at the end of 2026–27.
 
 ## Tech Stack
 
-- **Python** — data collection and modeling
-- **pandas / NumPy** — data processing and feature engineering
-- **SQLite** — season-specific tables and querying
-- **requests / python-dotenv** — API access and credentials
-- **RapidFuzz** — support for player-name matching
-- **scikit-learn** — preprocessing, regression, and evaluation
+- **Python** — collecting, processing, and modeling data
+- **pandas / NumPy** — cleaning and feature engineering
+- **SQLite** — storing match and season-level data
+- **requests / python-dotenv** — working with the API and environment variables
+- **RapidFuzz** — suggesting possible player-name matches
+- **scikit-learn** — preprocessing, training, cross-validation, and evaluation
 
 ## Data Sources
 
 ### PitchAPI
 
-Match-level player performance data, including minutes, goals, assists, ratings, passing statistics, chances created, and defensive actions. Match statistics are aggregated into player-season records.
+I used PitchAPI to retrieve Premier League matches and match-level player statistics such as minutes, goals, assists, ratings, passes, chances created, and defensive actions. These get aggregated into one row per outfield player per season.
 
 ### Transfermarkt
 
-Player attributes and historical market valuations. Records are matched to PitchAPI players using normalized names and verified identifier mappings where needed.
+I used historical Transfermarkt player information and valuations to get player attributes, positions, and the target market values. The two sources don't necessarily use the same player names or IDs, so merging them was a significant part of the project.
 
-For the initial 2025–26 dataset, target valuations were selected from a window after the season ended and through July 2026, rather than from the start of the season. Historical seasons must use their own corresponding valuation windows.
+For each season, I use the **first available valuation after the final league match**, up to July 31 of that year. This keeps the target aligned with the full-season statistics rather than accidentally using a valuation from before the season ended. Players without a valuation in that window are excluded from the labeled dataset.
 
 ## Data Pipeline
 
-1. Retrieve Premier League match IDs for the configured season.
-2. Download per-match player statistics, caching responses so interrupted runs can resume.
-3. Convert raw JSON into structured match-level CSV data.
-4. Aggregate player match statistics into season-level records and save them in SQLite.
-5. Join player records to Transfermarkt attributes and historical market values.
-6. Engineer per-90 metrics and passing accuracy.
-7. Train and evaluate regression models using scikit-learn pipelines.
+1. Retrieve the league and match IDs for the selected season.
+2. Request each match's player statistics, saving responses so an interrupted extraction can resume.
+3. Convert the raw JSON into a match-level CSV.
+4. Aggregate match statistics into season-level records in SQLite.
+5. Calculate per-90 statistics and passing accuracy.
+6. Match PitchAPI players to Transfermarkt records and select the relevant post-season valuation.
+7. Check for ambiguous player matches before saving the ML table.
+8. Train and evaluate regression models.
 
-Files and database tables use season-specific names so additional seasons can be added without replacing existing seasons.
+The files and SQLite tables are season-specific, so I can run the pipeline for another year without intentionally overwriting the previous season's dataset.
 
-## Multi-Season Dataset Expansion
+## Multi-Season Dataset
 
-After completing the initial model using the 2025–26 Premier League season, the dataset was expanded to include the 2023–24 and 2024–25 seasons.
+I started with 2025–26, then collected and processed 2023–24 and 2024–25 using the same pipeline.
 
-The same data collection and processing pipeline was reused across all three seasons. Each season's match-level player statistics were collected through PitchAPI, aggregated into season-level observations, and matched with historical Transfermarkt market valuations.
-
-### Dataset Summary
-
-| Season | Outfield Players | Players with Valuations | Coverage |
-|---|---:|---:|---:|
+| Season | Outfield players | Players with usable valuations | Coverage |
+| --- | ---: | ---: | ---: |
 | 2023–24 | 530 | 482 | 90.9% |
 | 2024–25 | 518 | 482 | 93.1% |
 | 2025–26 | 497 | 460 | 92.6% |
 | **Total** | **1,545** | **1,424** | **92.2%** |
 
-The expanded dataset contains **1,424 labeled player-season observations**, compared with 460 in the original dataset.
+That's **1,424 labeled player-season records** across three seasons, versus 460 records in the initial version. A player appearing in multiple seasons is kept as a separate observation for each year.
 
-Players can appear in multiple seasons, with each season representing a separate observation.
+### The player-matching problem
 
-### Data Integration and Validation
+This was one of the more frustrating parts of the project. PitchAPI and Transfermarkt often label the same player differently, and completely different players can have the same name. For example, names such as *Danilo*, *Antony*, and *Jorginho* initially produced multiple Transfermarkt matches.
 
-Combining PitchAPI and Transfermarkt required resolving differences in player names and identifiers.
+The current process is:
 
-The matching process includes:
+- Normalize names (lowercase, remove accents) and merge on the normalized name.
+- Use a dictionary called `verified_ids` for ambiguous names with manually checked PitchAPI-to-Transfermarkt IDs.
+- Use `fuzzy_verified_ids` when the same player has different names across the two sources.
+- Generate suggestions with RapidFuzz for players who still don't match.
+- Check for duplicate PitchAPI IDs before writing the finished ML table, rather than letting ambiguous matches into training.
 
-- Normalizing player names by converting them to lowercase and removing accents.
-- Matching records across data sources using normalized names.
-- Resolving ambiguous names using manually verified player IDs.
-- Using RapidFuzz to generate candidate matches for unmatched players.
-- Validating that each PitchAPI player appears only once per season.
-- Excluding players without market valuations in the selected post-season window.
+In practice, I printed the ambiguous matches, reviewed candidate players' birth dates and positions, used AI as an aid to narrow down possibilities, and then **manually added the confirmed mappings** to `verified_ids`. The AI suggestions weren't treated as an automatic or authoritative match.
 
-Each season uses its own valuation window based on the Premier League's final match date, aligning player performance statistics with subsequent market valuations.
-
-### Data Quality Challenges
-
-During the expansion, multiple Transfermarkt players were found to share identical or similar names. For example, players named Antony, Danilo, and Jorginho initially matched multiple Transfermarkt records.
-
-These ambiguous matches were reviewed using player IDs, dates of birth, positions, and other available information.
-
-Verified mappings were reused across seasons to improve the consistency of the matching process.
-
-The pipeline was also updated to automatically identify unresolved duplicate matches, preventing ambiguous records from entering the final machine learning dataset.
-
-### Next Steps
-
-The expanded dataset will be used to investigate whether additional historical training data improves market-value predictions.
-
-The next experiment will:
-
-1. Combine the three season-level datasets.
-2. Train the Random Forest model using the 2023–24 and 2024–25 seasons.
-3. Evaluate the model using 2025–26 as a chronological holdout.
-4. Compare performance against the initial single-season experiment.
-5. Analyze prediction errors and document model limitations.
-
-The goal is to evaluate how well historical player performance generalizes to a subsequent Premier League season.
+This worked for three Premier League seasons, but it's **not an efficient or scalable solution**. If I expand the dataset, I'd want a more systematic way of reconciling player IDs, with a review queue for uncertain matches instead of hardcoding every new exception.
 
 ## Model Features
 
 | Feature | Description |
 | --- | --- |
-| `age` | Player age |
-| `height_in_cm` | Player height |
-| `position` | Player position (one-hot encoded) |
+| `age` | Player's age at the season cutoff |
+| `height_in_cm` | Height |
+| `sub_position` | Player's position (one-hot encoded) |
 | `appearances` | League appearances |
 | `total_minutes` | League minutes played |
 | `total_goals_per90` | Goals per 90 minutes |
 | `total_assists_per90` | Assists per 90 minutes |
-| `avg_rating` | Average player rating |
-| `total_chances_created_per90` | Chances created per 90 minutes |
-| `total_defensive_actions_per90` | Defensive actions per 90 minutes |
-| `total_interceptions_per90` | Interceptions per 90 minutes |
-| `total_tackles_per90` | Tackles per 90 minutes |
+| `avg_rating` | Average match rating |
+| `total_chances_created_per90` | Chances created per 90 |
+| `total_defensive_actions_per90` | Defensive actions per 90 |
+| `total_interceptions_per90` | Interceptions per 90 |
+| `total_tackles_per90` | Tackles per 90 |
 | `pass_accuracy` | Share of successful pass attempts |
 
 **Target:** `market_value_in_eur`
 
-Per-90 features describe productivity relative to playing time, while total minutes preserve information about season participation.
+I ended up preferring per-90 statistics over raw totals in the early feature experiments. They help describe a player's production relative to their playing time, while `total_minutes` still provides context about how much they actually played. Goalkeepers are excluded from this version.
 
 ## Machine Learning Approach
 
 ### Preprocessing
 
-- Missing numerical values: mean imputation.
-- Missing position values: most-frequent imputation.
-- Position: one-hot encoding with unknown categories ignored.
-- Preprocessing is part of the model pipeline and is fitted within each training fold.
+- Mean imputation for missing numerical data.
+- Most-frequent imputation for missing position data.
+- One-hot encoding for `sub_position`, ignoring unknown categories.
+- Preprocessing inside a scikit-learn `Pipeline`, so it is fitted separately within training folds.
 
-### Model Selection
+### Model experiments
 
-Initial experiments compared **Linear Regression** with **Random Forest Regression**. Random Forest performed better in five-fold cross-validation.
+I initially compared Linear Regression with Random Forest, then tested different tree depths, minimum leaf sizes, total versus per-90 statistics, and player position. I also tested training on `np.log(market_value_in_eur)` instead of the original euro values.
 
-The selected Random Forest configuration is:
+After expanding the dataset, I compared Random Forest with Gradient Boosting. Random Forest performed better in our grouped cross-validation experiment with the configurations tested.
+
+The Random Forest configuration used for the final comparisons is:
 
 ```python
 RandomForestRegressor(
@@ -151,79 +127,172 @@ RandomForestRegressor(
 )
 ```
 
-Feature experiments compared raw totals, per-90 statistics, both together, and per-90 statistics with position. The per-90-plus-position configuration achieved the lowest cross-validation RMSE among those configurations.
+For the multi-season experiment, I trained on **2023–24 and 2024–25** and evaluated on **2025–26**. I used `GroupKFold` for cross-validation on the historical training data, grouping by Transfermarkt player ID so that the same player's records wouldn't be split across training and validation within a fold.
 
-### Log-Transformed Target
+The chronological 2025–26 evaluation asks a different question: how well does a model trained on previous seasons predict post-season market values for players in the next season? Returning players can appear in both the historical training seasons and the later test season.
 
-The project also evaluates training on the natural logarithm of market value (`np.log(y_train)`). Predictions are converted back into euros with `np.exp(...)` before scoring.
+## Results
 
-## Initial Results
+### Initial single-season experiment
 
-The first labeled dataset contained **460 outfield player records** from the **2025–26 Premier League season**. The initial split used **368 training** and **92 test** records.
+The original 2025–26-only dataset contained 460 labeled players, split into 368 training and 92 test records.
 
-### Five-Fold Cross-Validation (Training Partition)
-
-Both configurations below were compared using out-of-fold predictions evaluated in euros.
-
-| Metric | Original Random Forest | Log-Target Random Forest |
+| Metric | Original-target CV | Log-target CV |
 | --- | ---: | ---: |
-| MAE | €9,261,688.82 | **€8,683,392.20** |
-| RMSE | €13,616,701.54 | **€13,599,119.80** |
+| MAE | €9.26M | **€8.68M** |
+| RMSE | €13.62M | **€13.60M** |
 | R² | 0.5758 | **0.5769** |
 
-The log-target model improved cross-validation MAE by approximately **6.2%**, while RMSE and R² changed only slightly.
+The initial non-log model's held-out 92-player test results were **€11.27M MAE**, **€19.76M RMSE**, and **0.5648 R²**. This was an earlier experiment with a different train/test setup, so it isn't a like-for-like comparison with the chronological results below.
 
-### Held-Out Test Results (Original Target Only)
+### Three-season experiment: grouped cross-validation
 
-| Metric | Result |
-| --- | ---: |
-| MAE | €11,269,599.47 |
-| RMSE | €19,756,560.59 |
-| R² | 0.5648 |
+These metrics use out-of-fold predictions on the 2023–24 and 2024–25 training records, evaluated back in euros.
 
-**Important:** These held-out test results are for the original (non-log-target) model. The log-target model has not been independently evaluated on a new untouched test set. Its reported improvements are cross-validation results, not claims about new-season performance.
+| Metric | Random Forest (log target) | Random Forest (raw euros) | Gradient Boosting (log target) |
+| --- | ---: | ---: | ---: |
+| MAE | **€8.72M** | €9.28M | €8.91M |
+| RMSE | **€13.91M** | €14.07M | €14.19M |
+| R² | **0.6232** | 0.6142 | 0.6078 |
 
-## Limitations
+The log-target Random Forest performed best in this historical grouped CV comparison.
 
-- **Small dataset:** The initial experiment covers one league season, with only 368 training records.
-- **Limited context:** Club strength, contract duration, reputation, and other market factors are not modeled yet.
-- **High-value outliers:** Large errors on expensive players can disproportionately influence RMSE.
-- **Record matching:** Names and identifiers from different sources require validation.
-- **Time consistency:** Player inputs and target valuations must be aligned to the correct season and prediction date.
-- **Generalization:** A future-season evaluation is still needed to assess performance across time.
+### Three-season experiment: 2025–26 chronological evaluation
 
-## Setup
+| Metric | Random Forest (log target) | Random Forest (raw euros) |
+| --- | ---: | ---: |
+| MAE | €10.40M | **€9.29M** |
+| RMSE | €16.22M | **€14.46M** |
+| R² | 0.5093 | **0.6102** |
 
-Install the principal dependencies:
+The raw-euro Random Forest performed better on the 2025–26 evaluation set, even though the log version had slightly better historical CV scores. That tradeoff was worth investigating rather than assuming the log transformation was automatically better.
+
+**Evaluation caveat:** I looked at 2025–26 results repeatedly while developing the project, so these chronological results are **exploratory**, not a completely untouched, unbiased final test. The different historical and chronological evaluation sets also mean their scores shouldn't be treated as directly interchangeable.
+
+## Error Analysis
+
+The biggest issue is the model's **underestimation of expensive players**. With the raw-euro Random Forest, I grouped the 2025–26 predictions by their actual market values:
+
+| Actual market-value range | Players | Average absolute error | Average signed error |
+| --- | ---: | ---: | ---: |
+| Under €10M | 122 | €4.69M | +€4.32M |
+| €10M–30M | 216 | €5.79M | -€1.34M |
+| €30M–60M | 82 | €13.40M | -€11.17M |
+| Over €60M | 40 | €33.81M | -€33.81M |
+
+A positive signed error means the model overestimated the player; a negative error means it underestimated them. Every player in the over-€60M group was underestimated in this evaluation.
+
+The log-target model did better for players under €10M, but the raw-euro model reduced the absolute errors for the higher-value groups. Neither solved the underestimation of elite players.
+
+Some of the largest errors involved **Erling Haaland, Alexander Isak, Cole Palmer, Estêvão, Florian Wirtz, and Moisés Caicedo**. Their valuations make it clear that one season's Premier League statistics aren't the only thing the market is considering.
+
+### My football insights (to add)
+
+<!-- I'll write my own interpretation here: injuries, form, previous performance in other leagues, established reputation, potential, and why particular players were valued differently from what their Premier League numbers suggest. -->
+
+## Limitations and Possible Next Steps
+
+- **Missing football context:** We don't currently model remaining contract duration, club strength, reputation, injury history, or a player's performances outside the Premier League.
+- **Single-season performance as input:** A player's valuation can reflect several years of established ability and potential, even when their current season's statistics are underwhelming.
+- **Position differences:** Attackers, midfielders, and defenders aren't evaluated on identical criteria. One possible V2 experiment is to train separate models by position, although that means fewer training samples for each model.
+- **Player matching:** The manual `verified_ids` process doesn't scale well beyond a small number of seasons in one league.
+- **Expanding to the other top-five European leagues:** This was part of my original idea, but it's substantially more complicated than just changing the league setting. It would introduce many more ambiguous player names, different league contexts, and players moving **between the top-five leagues**, requiring stable identity tracking across leagues and seasons. Without a better matching system, scaling the pipeline that way would be inefficient and error-prone.
+- **Future testing:** A genuinely new, later season would provide a cleaner evaluation of the final model than repeatedly using 2025–26.
+
+I'm stopping model development for V1 here. These are useful directions for future work, but I don't want to keep adding complexity just to chase a slightly better score.
+
+## Setup and Running the Project
+
+### 1. Directory structure
+
+**For the scripts to work as written, recreate a directory structure similar to the one in this repository.** A lot of the paths are built relative to the script location using `Path(__file__).resolve().parents[...]`. If you prefer a different structure, that's completely fine, but you'll need to change the corresponding paths in the scripts.
+
+The important parts are:
+
+```text
+project-root/
+├── .env                     # create locally; do not commit
+├── .gitignore
+├── config.py
+├── README.md
+├── database/
+│   └── football.db          # created/populated by the data pipeline
+├── data/
+│   └── pitch_api_data/
+│       ├── raw_data/
+│       │   ├── leagues.json
+│       │   └── 2024/         # example season folder
+│       └── processed_data/
+│           └── 2024/
+└── src/
+    ├── pitch_api/
+    │   └── player_stats_extractor.py
+    ├── transfermarkt/
+    │   └── player_info.py
+    └── train_model.py
+```
+
+The tree highlights the paths used by the scripts; other collection and processing scripts in the repo also need to be run. The `raw_data` and `processed_data` folders contain season-specific files. The Transfermarkt source tables (`transfermarkt_players` and `transfermarkt_values`) must also be present in `football.db` before running `player_info.py`.
+
+### 2. Install dependencies
+
+From the project root, set up a Python environment and install the libraries used by the scripts:
 
 ```bash
 pip install pandas numpy requests python-dotenv scikit-learn rapidfuzz
 ```
 
-Create a `.env` file in the repository root with your own API credentials. **Do not commit API keys.** Configure the target league and season in `config.py`.
+### 3. API key and `.gitignore`
 
-Run the collection and processing scripts in pipeline order: matches → match-player statistics → structured CSV → season aggregation → valuation matching. The modeling script is `src/train_model.py`.
+Create a `.env` file **in the project root**, not inside `src/`. The PitchAPI extraction scripts look there for the key:
 
-> Exact script commands will be documented after the multi-season data pipeline is finalized.
+```dotenv
+api_key_pitch=YOUR_API_KEY_HERE
+```
+
+**Do not upload your real API key to GitHub.** Add this to `.gitignore` at minimum:
+
+```gitignore
+.env
+.venv/
+__pycache__/
+*.pyc
+```
+
+You can also ignore generated/raw data and local database files if you don't want to commit them. Just remember that someone cloning the repo will then need to generate or obtain those files themselves. If an API key was ever committed, adding `.env` to `.gitignore` afterward does not remove the secret from Git history; the key should be rotated.
+
+### 4. Configure the season
+
+Set `LEAGUE_NAME`, `SEASON`, `MATCH_SEASON`, and `COUNTRY_CODE` as needed in `config.py`. `SEASON` is the starting year (for example, `2024` means 2024–25). The API's season argument and the local season-folder naming need to be consistent with the scripts.
+
+The valuation windows in `player_info.py` are configured for the three Premier League seasons used here. New seasons or leagues may require adding their correct final-match dates.
+
+### 5. Run the pipeline in order
+
+1. Collect/confirm the league IDs and match IDs for the selected season.
+2. Run `src/pitch_api/player_stats_extractor.py` to fetch each match's player data.
+3. Run the JSON-to-CSV processing script.
+4. Run the match-to-season SQLite aggregation script.
+5. Make sure the historical Transfermarkt player and valuation tables are loaded into SQLite.
+6. Run `src/transfermarkt/player_info.py` and resolve any reported duplicate-name matches before proceeding.
+7. Repeat for any additional seasons, then run `src/train_model.py`.
+
+The current training script selects the 2023 and 2024 tables for training and uses 2025 for chronological evaluation. If you add or remove seasons, update its SQL query and split accordingly.
 
 ## Roadmap
 
-- [x] Retrieve Premier League player statistics
-- [x] Integrate historical Transfermarkt valuations
-- [x] Store and aggregate records with SQLite
-- [x] Engineer per-90 features
-- [x] Train and compare regression models
-- [x] Tune Random Forest hyperparameters
-- [x] Add position encoding
-- [x] Compare raw and log-transformed targets using cross-validation
-- [x] Evaluate the initial model on a held-out test set
-- [ ] Complete the 2024–25 Premier League dataset
-- [ ] Add more historical seasons
-- [ ] Evaluate with a chronological train/test split
-- [ ] Investigate club and contract context
-- [ ] Analyze high-error predictions and create visualizations
-- [ ] Build a player-value prediction interface
+- [x] Collect and aggregate Premier League match statistics
+- [x] Match PitchAPI and Transfermarkt records
+- [x] Build season-specific SQLite datasets for 2023–24, 2024–25, and 2025–26
+- [x] Engineer per-90 features and encode positions
+- [x] Compare Linear Regression, Random Forest, and Gradient Boosting
+- [x] Test raw-euro and log-transformed market-value targets
+- [x] Evaluate with grouped cross-validation and a chronological season split
+- [x] Analyze prediction errors by market-value range
+- [ ] Write up my detailed football-specific interpretation of the largest errors
+- [ ] Save the trained model and build an interactive demo
+- [ ] (Possible V2) Position-specific models, additional leagues, and better cross-league player ID matching
 
 ## Project Status
 
-The initial end-to-end pipeline and model are working. The current focus is **expanding historical data coverage** and testing whether the model can generalize to other seasons.
+**V1 modeling is complete.** The next steps are documenting the findings, making the repository easy to follow, and possibly building a small frontend to show the predictions.
