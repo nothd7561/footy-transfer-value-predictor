@@ -181,3 +181,8 @@ print(
     )
 )
 
+output_dir = file_dir / 'data' / 'model_results'
+output_dir.mkdir(parents=True, exist_ok=True)
+
+error_df.to_csv(output_dir / 'predictions_2025.csv', index=False)
+#save predictions so we can create graphs separately
