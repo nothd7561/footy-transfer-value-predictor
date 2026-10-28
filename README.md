@@ -12,7 +12,7 @@ I wanted to build something that involved more than just downloading a clean dat
 - Build a working pipeline from raw football data to a machine learning dataset.
 - Use player statistics, age, and position to estimate post-season market values.
 - Compare models and feature choices instead of relying on one training run.
-- Understand *where* the model makes mistakes, not just report an accuracy metric.
+- Understand where and why the model makes mistakes, not just report an accuracy metric.
 
 This predicts **market valuations, not actual transfer fees**. For example, the 2025–26 inputs are performances from that season, and the labels are Transfermarkt valuations recorded after the season ended (through July 2026). The model does **not** forecast values at the end of 2026–27.
 
