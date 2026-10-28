@@ -9,6 +9,27 @@ I created this because I saw this as an idea on Instagram, and I needed somethin
 
 **Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
+## Table of Contents
+
+- [Project Goals](#project-goals)
+- [Tech Stack](#tech-stack)
+- [Data Sources](#data-sources)
+- [Data Pipeline](#data-pipeline)
+- [Multi-Season Dataset](#multi-season-dataset)
+  - [The Player-Matching Problem](#the-player-matching-problem)
+- [Model Features](#model-features)
+- [Machine Learning Approach](#machine-learning-approach)
+- [Results](#results)
+  - [Initial Single-Season Experiment](#initial-single-season-experiment)
+  - [Grouped Cross-Validation](#three-season-experiment-grouped-cross-validation)
+  - [Chronological Evaluation](#three-season-experiment-202526-chronological-evaluation)
+- [Error Analysis](#error-analysis)
+  - [My Football Insights](#my-football-insights)
+- [Limitations and Possible Next Steps](#limitations-and-possible-next-steps)
+- [Setup and Running the Project](#setup-and-running-the-project)
+- [Roadmap](#roadmap)
+- [Project Status](#project-status)
+
 ## Project Goals
 
 - Build a working pipeline from raw football data to a machine learning dataset.
