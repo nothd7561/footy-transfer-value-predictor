@@ -9,6 +9,14 @@ I created this because I saw this as an idea on Instagram, and I needed somethin
 
 **Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
+### Project at a Glance
+
+| Dataset | Model | 2025–26 MAE | 2025–26 R² |
+| --- | --- | --- | --- |
+| 1,424 player-season records | Random Forest | €9.29M | 0.6102 |
+
+**[Explore the Interactive Scatterplot](https://nothd7561.github.io/footy-transfer-value-predictor/)**
+
 ## Table of Contents
 
 - [Project Goals](#project-goals)
@@ -192,6 +200,8 @@ The raw-euro Random Forest performed better on the 2025–26 evaluation set, eve
 
 **Evaluation caveat:** I looked at 2025–26 results repeatedly while developing the project, so these chronological results are **exploratory**, not a completely untouched, unbiased final test. The different historical and chronological evaluation sets also mean their scores shouldn't be treated as directly interchangeable.
 
+[Back to Top](#football-transfer-value-predictor)
+
 ## Error Analysis
 
 The biggest issue is the model's **underestimation of expensive players**. With the raw-euro Random Forest, I grouped the 2025–26 predictions by their actual market values:
@@ -228,6 +238,8 @@ Printing out the 10 highest valued players we predicted, we could see that among
 Specifically, Florian Wirtz established his high price tag in the Bundesliga, another top 5 league before moving to the Premier League. Wirtz has been underwhelming in his time at Liverpool, with his stats not accurately reflecting those he put up at Bayer Leverkusen. For others like Saka and Estevao, those two players sustained heavy injuries that crucially affected their ability to make significant contributions. Meaning that their price tag remained where it is because their abilities had not diminished, they were just plagued by injuries and couldn't get enough time to make an impact.
 
 In summary, there are so much external factors that we just can't really cover with pure data that can influence a player's performance and market evaluation. At least for this project, the movement between top 5 leagues is shooting a bit far. Hopefully, I will be skilled enough to accomplish such a task.
+
+[Back to Top](#football-transfer-value-predictor)
 
 ## Limitations and Possible Next Steps
 
