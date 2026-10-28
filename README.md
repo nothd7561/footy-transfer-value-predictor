@@ -188,6 +188,16 @@ The log-target model did better for players under €10M, but the raw-euro model
 
 Some of the largest errors involved **Erling Haaland, Alexander Isak, Cole Palmer, Estêvão, Florian Wirtz, and Moisés Caicedo**. Their valuations make it clear that one season's Premier League statistics aren't the only thing the market is considering.
 
+### Interactive Visualization
+
+I created an interactive scatterplot to compare predicted
+and actual market values for the 2025–26 Premier League season.
+
+Hover over each player to see their name, position,
+actual market value, predicted value, and prediction error.
+
+[Explore the interactive graph](https://nothd7561.github.io/footy-transfer-value-predictor/)
+
 ### My football insights 
 
 When I analyzed the results of my model, my first thought was just that my model wasn't accurate. But when looking a bit deeper, I realize that my knowledge of the football world and its current standings could help explain the reasoning behind the model's lack in accuracy.
