@@ -3,7 +3,9 @@
 
 A machine learning project where I try to predict a football player's **Transfermarkt market value after a Premier League season**, using their performances during that season.
 
-I wanted to build something that involved more than just downloading a clean dataset and fitting a model. Most of this project involved collecting match data, combining it with Transfermarkt valuations, figuring out why players weren't matching properly, and then experimenting with different regression models.
+I wanted to build something that involved more than just downloading a clean dataset and fitting a model. Most of this project involved collecting match data, combining it with Transfermarkt valuations, figuring out why players weren't matching properly, and then experimenting with different regression models. 
+
+I created this because I saw this as an idea on Instagram, and I needed something to test what I've learned so far. I did use AI for some parts, but everything from the entire pipeline and process of this project was created by me.
 
 **Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
@@ -186,9 +188,15 @@ The log-target model did better for players under €10M, but the raw-euro model
 
 Some of the largest errors involved **Erling Haaland, Alexander Isak, Cole Palmer, Estêvão, Florian Wirtz, and Moisés Caicedo**. Their valuations make it clear that one season's Premier League statistics aren't the only thing the market is considering.
 
-### My football insights (to add)
+### My football insights 
 
-<!-- I'll write my own interpretation here: injuries, form, previous performance in other leagues, established reputation, potential, and why particular players were valued differently from what their Premier League numbers suggest. -->
+When I analyzed the results of my model, my first thought was just that my model wasn't accurate. But when looking a bit deeper, I realize that my knowledge of the football world and its current standings could help explain the reasoning behind the model's lack in accuracy.
+
+Printing out the 10 highest valued players we predicted, we could see that among the names are Bukayo Saka, William Estevao, Florian Wirtz, etc. Any football fan that kept up with the Premier League 25/26 season and before knows the history of those players with injuries and transfers. 
+
+Specifically, Florian Wirtz established his high price tag in the Bundesliga, another top 5 league before moving to the Premier League. Wirtz has been underwhelming in his time at Liverpool, with his stats not accurately reflecting those he put up at Bayer Leverkusen. For others like Saka and Estevao, those two players sustained heavy injuries that crucially affected their ability to make significant contributions. Meaning that their price tag remained where it is because their abilities had not diminished, they were just plagued by injuries and couldn't get enough time to make an impact.
+
+In summary, there are so much external factors that we just can't really cover with pure data that can influence a player's performance and market evaluation. At least for this project, the movement between top 5 leagues is shooting a bit far. Hopefully, I will be skilled enough to accomplish such a task.
 
 ## Limitations and Possible Next Steps
 
@@ -202,6 +210,11 @@ Some of the largest errors involved **Erling Haaland, Alexander Isak, Cole Palme
 I'm stopping model development for V1 here. These are useful directions for future work, but I don't want to keep adding complexity just to chase a slightly better score.
 
 ## Setup and Running the Project
+
+As I mentioned before, this project also took in external data specifically for the transfermarkt data.
+The database for transfermarkt can be downloaded at this link : https://github.com/dcaribou/transfermarkt-datasets
+
+    -Keep in mind, this is a database, we only need two csvs from this folder. If you wish to use the other ones that is fine, but most csvs contained here go over the GitHub Large File limit of 100MB, so you need to account for that.
 
 ### 1. Directory structure
 
