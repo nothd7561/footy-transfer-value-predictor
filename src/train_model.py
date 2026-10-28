@@ -15,15 +15,25 @@ league = LEAGUE_NAME.replace(' ', '_')
 table_name = f'player_ml_data_{league}_{SEASON}'
 
 
-query = f"""
-SELECT *
-FROM "{table_name}"
+query = """
+SELECT * FROM player_ml_data_Premier_League_2023
+
+UNION ALL
+
+SELECT * FROM player_ml_data_Premier_League_2024
+
+UNION ALL
+
+SELECT * FROM player_ml_data_Premier_League_2025
 """
 #select everything from our dataset 
 
 with sqlite3.connect(db_path) as connection:
     df = pd.read_sql_query(query, connection)
 #establish our connection to the table
+
+#print(df.groupby('season').size())
+#print('Total observations:', len(df))
 
 column_names = df.columns.to_list()
 #print(column_names)
@@ -61,15 +71,23 @@ from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_sco
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 import numpy as np
-from sklearn.model_selection import cross_val_predict, KFold
+from sklearn.model_selection import cross_val_predict, GroupKFold
 
 
-x_train, x_test, y_train, y_test = train_test_split(x_features, y_features,
-                                                    test_size = 0.2,
-                                                    train_size = 0.8,
-                                                    random_state = 42)
+train_df = df[df['season'].isin([2023, 2024])]
+test_df = df[df['season'] == 2025]
+#
 
-y_train_log = np.log(y_train)
+x_train = train_df[features]
+y_train = train_df['market_value_in_eur']
+
+x_test = test_df[features]
+y_test = test_df['market_value_in_eur']
+
+groups = train_df['player_id_tm']
+
+
+#y_train_log = np.log(y_train)
 #log transform our y training values (the euro prices)
 
 numerical_processor = Pipeline([('imputing', SimpleImputer(strategy='mean'))])
@@ -98,22 +116,68 @@ model = Pipeline([('preprocessor', preprocessor),
 #create the pipeline for the regression model, including the randomforest and imputation
 #we already tuned our hyperparameters
 
-log_predictions = cross_val_predict(
+eur_predictions = cross_val_predict(
     model,
     x_train,
-    y_train_log,
-    cv=5)
+    y_train,
+    cv=GroupKFold(n_splits=5),
+    groups=groups)
 
 #convert predictions back into euros
-predictions_eur = np.exp(log_predictions)
-print(f"CV MAE: €{mean_absolute_error(y_train, predictions_eur):,.2f}")
-print(f"CV RMSE: €{root_mean_squared_error(y_train, predictions_eur):,.2f}")
-print(f"CV R²: {r2_score(y_train, predictions_eur):.4f}")
 
-#model.fit(x_train, y_train_log)
+
+print(f"cv mae : €{mean_absolute_error(y_train, eur_predictions):,.2f}")
+print(f"cv rmse : €{root_mean_squared_error(y_train, eur_predictions):,.2f}")
+print(f"cv r^2 : {r2_score(y_train, eur_predictions):.4f}")
+
+model.fit(x_train, y_train)
 #train the model
 
+#predict market values for the 2025/26 season
+test_predictions_eur = model.predict(x_test)
+
+#convert predictions back into euros
 
 
+print("test results")
+print(f"test mae : €{mean_absolute_error(y_test, test_predictions_eur):,.2f}")
+print(f"test rmse : €{root_mean_squared_error(y_test, test_predictions_eur):,.2f}")
+print(f"test r^2 : {r2_score(y_test, test_predictions_eur):.4f}")
 
+
+error_df = test_df[['player_name_pitch', 'age', 'sub_position', 'market_value_in_eur']].copy()
+#store the actual and predicted market values for each test player
+
+error_df['predicted_value'] = test_predictions_eur
+#create a column of the predicted values
+
+error_df['error'] = (error_df['predicted_value'] - error_df['market_value_in_eur'])
+#calculate how far each prediction is from the actual value
+
+error_df['absolute_error'] = error_df['error'].abs()
+#absolute error for the error value
+
+print(
+    error_df.sort_values(
+        'absolute_error',
+        ascending=False
+    ).head(10).to_string(
+        index=False,
+        float_format=lambda x: f'{x:,.2f}'
+    )
+)
+
+error_df['value_group'] = pd.cut(
+    error_df['market_value_in_eur'],
+    bins=[0, 10000000, 30000000, 60000000, float('inf')],
+    labels=['Under €10M', '€10M–30M', '€30M–60M', 'Over €60M']
+)
+
+print(
+    error_df.groupby('value_group', observed=True).agg(
+        players=('absolute_error', 'count'),
+        avg_absolute_error=('absolute_error', 'mean'),
+        avg_error=('error', 'mean')
+    )
+)
 
