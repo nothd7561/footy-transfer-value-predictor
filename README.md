@@ -323,28 +323,11 @@ The tree highlights the paths used by the scripts; other collection and processi
 
 ### 2. Install dependencies
 
-From the project root, I recommend setting up a Python virtual environment before installing the dependencies.
-
-Create a virtual environment:
+From the project root, set up a Python environment and install the libraries used by the scripts:
 
 ```bash
-python -m venv .venv
+pip install pandas numpy requests python-dotenv scikit-learn rapidfuzz
 ```
-
-Activate the virtual environment (Windows PowerShell):
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Install all required packages:
-
-```bash
-pip install -r requirements.txt
-```
-
-The `requirements.txt` file contains all the Python libraries needed for data collection, processing, model training, and visualization.
-
 
 ### 3. API key and `.gitignore`
 
@@ -404,3 +387,11 @@ The current training script selects the 2023 and 2024 tables for training and us
 ## Project Status
 
 **V1 modeling is complete.** The next steps are documenting the findings, making the repository easy to follow, and possibly building a small frontend to show the predictions.
+
+### Reproducibility
+
+The model training, saved model loading, and visualization scripts were successfully tested in a fresh Python 3.14 virtual environment using the dependencies specified in `requirements.txt`.
+
+This confirms that the modeling and visualization components work without relying on additional packages installed in my original Python environment.
+
+The tests used the existing local SQLite database and processed datasets. Rebuilding the entire dataset from scratch would still require the original API credentials and Transfermarkt data.
