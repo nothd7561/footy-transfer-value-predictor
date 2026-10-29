@@ -321,13 +321,45 @@ project-root/
 The tree highlights the paths used by the scripts; other collection and processing scripts in the repo also need to be run. The `raw_data` and `processed_data` folders contain season-specific files. The Transfermarkt source tables (`transfermarkt_players` and `transfermarkt_values`) must also be present in `football.db` before running `player_info.py`.
 
 
+
 ### 2. Install dependencies
 
-From the project root, set up a Python environment and install the libraries used by the scripts:
+From the project root, create a Python virtual environment:
 
-```bash
-pip install pandas numpy requests python-dotenv scikit-learn rapidfuzz
+```powershell
+python -m venv .venv
 ```
+
+This creates an isolated Python environment so the packages required for this project don't interfere with other Python projects.
+
+**For Windows PowerShell, you do not need to activate the virtual environment.** Instead, install the dependencies directly using the Python executable inside `.venv`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+This installs all the necessary libraries for data collection, processing, model training, and visualization.
+
+### Running the scripts
+
+When running Python scripts, use the executable from the virtual environment.
+
+To train the model:
+
+```powershell
+.\.venv\Scripts\python.exe src/train_model.py
+```
+
+To generate the visualizations:
+
+```powershell
+.\.venv\Scripts\python.exe src/visualize_results.py
+```
+
+This approach avoids modifying PowerShell's execution policy.
+
+**Reproducibility:** The saved model, training script, and visualization script were successfully tested in a fresh Python 3.14 virtual environment using the dependencies listed in `requirements.txt`. These tests used the existing local SQLite database and processed datasets.
+
 
 ### 3. API key and `.gitignore`
 
