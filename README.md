@@ -320,13 +320,31 @@ project-root/
 
 The tree highlights the paths used by the scripts; other collection and processing scripts in the repo also need to be run. The `raw_data` and `processed_data` folders contain season-specific files. The Transfermarkt source tables (`transfermarkt_players` and `transfermarkt_values`) must also be present in `football.db` before running `player_info.py`.
 
+
 ### 2. Install dependencies
 
-From the project root, set up a Python environment and install the libraries used by the scripts:
+From the project root, I recommend setting up a Python virtual environment before installing the dependencies.
+
+Create a virtual environment:
 
 ```bash
-pip install pandas numpy requests python-dotenv scikit-learn rapidfuzz
+python -m venv .venv
 ```
+
+Activate the virtual environment (Windows PowerShell):
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install all required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+The `requirements.txt` file contains all the Python libraries needed for data collection, processing, model training, and visualization.
+
 
 ### 3. API key and `.gitignore`
 
