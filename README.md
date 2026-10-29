@@ -410,8 +410,8 @@ The current training script selects the 2023 and 2024 tables for training and us
 - [x] Test raw-euro and log-transformed market-value targets
 - [x] Evaluate with grouped cross-validation and a chronological season split
 - [x] Analyze prediction errors by market-value range
-- [ ] Write up my detailed football-specific interpretation of the largest errors
-- [ ] Save the trained model and build an interactive demo
+- [X] Write up my detailed football-specific interpretation of the largest errors
+- [X] Save the trained model and build an interactive demo
 - [ ] (Possible V2) Position-specific models, additional leagues, and better cross-league player ID matching
 
 [↑ Back to Top](#football-transfer-value-predictor)
