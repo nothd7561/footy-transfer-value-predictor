@@ -13,29 +13,41 @@ PS: Most of this README was created by AI
 
 **Status:** Version 1 of the data pipeline and model is complete. A frontend/demo is something I may add later.
 
-### Project at a Glance
+
+### Project Up Front
 
 | Dataset | Model | 2025–26 MAE | 2025–26 R² |
 | --- | --- | --- | --- |
 | 1,424 player-season records | Random Forest | €9.29M | 0.6102 |
 
-**[Explore the Interactive Scatterplot](https://nothd7561.github.io/footy-transfer-value-predictor/)**
+### Explore the Project
+
+**[Interactive Player Valuation Scatterplot](https://nothd7561.github.io/footy-transfer-value-predictor/)**
+
+**[Understanding the Results — Non-Technical Guide](NON_TECHNICAL_GUIDE.md)**
+
+If you're unfamiliar with machine learning, I'd recommend reading the non-technical guide first. It explains what the model predicts, what the results mean, and where the model struggles.
 
 ## Table of Contents
 
 - [Project Goals](#project-goals)
 - [Tech Stack](#tech-stack)
 - [Data Sources](#data-sources)
+  - [PitchAPI](#pitchapi)
+  - [Transfermarkt](#transfermarkt)
 - [Data Pipeline](#data-pipeline)
 - [Multi-Season Dataset](#multi-season-dataset)
   - [The Player-Matching Problem](#the-player-matching-problem)
 - [Model Features](#model-features)
 - [Machine Learning Approach](#machine-learning-approach)
+  - [Preprocessing](#preprocessing)
+  - [Model Experiments](#model-experiments)
 - [Results](#results)
   - [Initial Single-Season Experiment](#initial-single-season-experiment)
   - [Grouped Cross-Validation](#three-season-experiment-grouped-cross-validation)
   - [Chronological Evaluation](#three-season-experiment-202526-chronological-evaluation)
 - [Error Analysis](#error-analysis)
+  - [Interactive Visualization](#interactive-visualization)
   - [My Football Insights](#my-football-insights)
 - [Limitations and Possible Next Steps](#limitations-and-possible-next-steps)
 - [Setup and Running the Project](#setup-and-running-the-project)
@@ -60,6 +72,8 @@ This predicts **market valuations, not actual transfer fees**. For example, the 
 - **RapidFuzz** — suggesting possible player-name matches
 - **scikit-learn** — preprocessing, training, cross-validation, and evaluation
 
+[↑ Back to Top](#football-transfer-value-predictor)
+
 ## Data Sources
 
 ### PitchAPI
@@ -71,6 +85,8 @@ I used PitchAPI to retrieve Premier League matches and match-level player statis
 I used historical Transfermarkt player information and valuations to get player attributes, positions, and the target market values. The two sources don't necessarily use the same player names or IDs, so merging them was a significant part of the project.
 
 For each season, I use the **first available valuation after the final league match**, up to July 31 of that year. This keeps the target aligned with the full-season statistics rather than accidentally using a valuation from before the season ended. Players without a valuation in that window are excluded from the labeled dataset.
+
+[↑ Back to Top](#football-transfer-value-predictor)
 
 ## Data Pipeline
 
@@ -84,6 +100,8 @@ For each season, I use the **first available valuation after the final league ma
 8. Train and evaluate regression models.
 
 The files and SQLite tables are season-specific, so I can run the pipeline for another year without intentionally overwriting the previous season's dataset.
+
+[↑ Back to Top](#football-transfer-value-predictor)
 
 ## Multi-Season Dataset
 
@@ -114,6 +132,8 @@ In practice, I printed the ambiguous matches, reviewed candidate players' birth 
 
 This worked for three Premier League seasons, but it's **not an efficient or scalable solution**. If I expand the dataset, I'd want a more systematic way of reconciling player IDs, with a review queue for uncertain matches instead of hardcoding every new exception.
 
+[↑ Back to Top](#football-transfer-value-predictor)
+
 ## Model Features
 
 | Feature | Description |
@@ -135,6 +155,8 @@ This worked for three Premier League seasons, but it's **not an efficient or sca
 **Target:** `market_value_in_eur`
 
 I ended up preferring per-90 statistics over raw totals in the early feature experiments. They help describe a player's production relative to their playing time, while `total_minutes` still provides context about how much they actually played. Goalkeepers are excluded from this version.
+
+[↑ Back to Top](#football-transfer-value-predictor)
 
 ## Machine Learning Approach
 
@@ -165,6 +187,8 @@ RandomForestRegressor(
 For the multi-season experiment, I trained on **2023–24 and 2024–25** and evaluated on **2025–26**. I used `GroupKFold` for cross-validation on the historical training data, grouping by Transfermarkt player ID so that the same player's records wouldn't be split across training and validation within a fold.
 
 The chronological 2025–26 evaluation asks a different question: how well does a model trained on previous seasons predict post-season market values for players in the next season? Returning players can appear in both the historical training seasons and the later test season.
+
+[↑ Back to Top](#football-transfer-value-predictor)
 
 ## Results
 
@@ -256,6 +280,8 @@ In summary, there are so much external factors that we just can't really cover w
 
 I'm stopping model development for V1 here. These are useful directions for future work, but I don't want to keep adding complexity just to chase a slightly better score.
 
+[↑ Back to Top](#football-transfer-value-predictor)
+
 ## Setup and Running the Project
 
 As I mentioned before, this project also took in external data specifically for the transfermarkt data.
@@ -339,6 +365,8 @@ The valuation windows in `player_info.py` are configured for the three Premier L
 
 The current training script selects the 2023 and 2024 tables for training and uses 2025 for chronological evaluation. If you add or remove seasons, update its SQL query and split accordingly.
 
+[↑ Back to Top](#football-transfer-value-predictor)
+
 ## Roadmap
 
 - [x] Collect and aggregate Premier League match statistics
@@ -352,6 +380,8 @@ The current training script selects the 2023 and 2024 tables for training and us
 - [ ] Write up my detailed football-specific interpretation of the largest errors
 - [ ] Save the trained model and build an interactive demo
 - [ ] (Possible V2) Position-specific models, additional leagues, and better cross-league player ID matching
+
+[↑ Back to Top](#football-transfer-value-predictor)
 
 ## Project Status
 
