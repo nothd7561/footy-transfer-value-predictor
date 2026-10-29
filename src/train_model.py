@@ -2,6 +2,7 @@ import sqlite3
 import pandas as pd
 from pathlib import Path
 import sys
+import joblib
 
 file_dir = Path(__file__).resolve().parents[1]
 
@@ -131,7 +132,18 @@ print(f"cv rmse : €{root_mean_squared_error(y_train, eur_predictions):,.2f}")
 print(f"cv r^2 : {r2_score(y_train, eur_predictions):.4f}")
 
 model.fit(x_train, y_train)
+
 #train the model
+model_dir = file_dir / 'models'
+model_dir.mkdir(parents=True, exist_ok=True)
+#create a directory to store trained models
+
+model_path = model_dir / 'random_forest_2025.joblib'
+
+joblib.dump(model, model_path)
+#save our trained random forest model
+
+print(f'Model saved to: {model_path}')
 
 #predict market values for the 2025/26 season
 test_predictions_eur = model.predict(x_test)
