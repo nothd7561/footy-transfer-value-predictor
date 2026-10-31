@@ -68,7 +68,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_score, mean_squared_error
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 import numpy as np
@@ -86,7 +86,6 @@ x_test = test_df[features]
 y_test = test_df['market_value_in_eur']
 
 groups = train_df['player_id_tm']
-
 
 #y_train_log = np.log(y_train)
 #log transform our y training values (the euro prices)
@@ -117,6 +116,8 @@ model = Pipeline([('preprocessor', preprocessor),
 #create the pipeline for the regression model, including the randomforest and imputation
 #we already tuned our hyperparameters
 
+
+
 eur_predictions = cross_val_predict(
     model,
     x_train,
@@ -130,6 +131,7 @@ eur_predictions = cross_val_predict(
 print(f"cv mae : €{mean_absolute_error(y_train, eur_predictions):,.2f}")
 print(f"cv rmse : €{root_mean_squared_error(y_train, eur_predictions):,.2f}")
 print(f"cv r^2 : {r2_score(y_train, eur_predictions):.4f}")
+
 
 model.fit(x_train, y_train)
 
@@ -148,12 +150,29 @@ print(f'Model saved to: {model_path}')
 #predict market values for the 2025/26 season
 test_predictions_eur = model.predict(x_test)
 
-#convert predictions back into euros
 
+baseline = y_train.median()
+baseline_predictions = np.full(len(y_test), baseline)
+
+baseline_mae = mean_absolute_error(y_test, baseline_predictions)
+baseline_rmse = np.sqrt(mean_squared_error(y_test, baseline_predictions))
+baseline_r2 = r2_score(y_test, baseline_predictions)
+#create a baseline using median values, so that our test scores have something to compare against
+
+print('baseline results')
+print(f'baseline mae : EUR {baseline_mae:,.2f}')
+print(f'baseline rmse : EUR {baseline_rmse:,.2f}')
+print(f'baseline r2 : {baseline_r2:,.4f}')
+
+rf_mae = mean_absolute_error(y_test, test_predictions_eur)
+
+mae_improvement = (baseline_mae - rf_mae) / baseline_mae * 100
+
+print(f"\nRandom Forest MAE improvement over baseline: {mae_improvement:.2f}%")
 
 print("test results")
-print(f"test mae : €{mean_absolute_error(y_test, test_predictions_eur):,.2f}")
-print(f"test rmse : €{root_mean_squared_error(y_test, test_predictions_eur):,.2f}")
+print(f"test mae : EUR {mean_absolute_error(y_test, test_predictions_eur):,.2f}")
+print(f"test rmse : EUR {root_mean_squared_error(y_test, test_predictions_eur):,.2f}")
 print(f"test r^2 : {r2_score(y_test, test_predictions_eur):.4f}")
 
 
