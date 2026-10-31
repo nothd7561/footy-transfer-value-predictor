@@ -228,6 +228,38 @@ The raw-euro Random Forest performed better on the 2025–26 evaluation set, eve
 
 **Evaluation caveat:** I looked at 2025–26 results repeatedly while developing the project, so these chronological results are **exploratory**, not a completely untouched, unbiased final test. The different historical and chronological evaluation sets also mean their scores shouldn't be treated as directly interchangeable.
 
+### Baseline Comparison
+
+To evaluate whether the Random Forest provides meaningful predictive value beyond a simple estimate, I compared it against a median-value baseline using the same chronological evaluation set.
+
+#### Methodology
+
+- Calculated the median market value from the 2023–24 and 2024–25 training seasons.
+- Used this median as a constant prediction for every player in the 2025–26 evaluation season.
+- Evaluated both approaches on the same 460 player-season observations using MAE, RMSE, and R².
+
+#### Results
+
+| Metric | Median Baseline | Random Forest |
+|---|---:|---:|
+| MAE | €16.26M | **€9.29M** |
+| RMSE | €25.18M | **€14.46M** |
+| R² | -0.1823 | **0.6102** |
+
+The Random Forest reduced MAE by **42.87%** and RMSE by **42.58%** compared with the median baseline, lowering average absolute prediction error by approximately **€6.97M per player-season**.
+
+#### Interpretation
+
+The baseline predicts the same historical median market value for every player, regardless of their performance, position, or age. In contrast, the Random Forest uses engineered per-90 statistics and player characteristics to generate individualized predictions.
+
+The improvement suggests that the model captures useful relationships between player performance and post-season market valuations rather than simply predicting a typical player value.
+
+The baseline's negative R² indicates that its squared prediction error exceeded that of a constant prediction using the evaluation set's mean. Because the baseline uses the training median, it is designed to be a simple MAE-oriented benchmark rather than an optimal predictor under squared error.
+
+While the Random Forest substantially outperformed this baseline, it still systematically underestimated high-value players, indicating limitations in its ability to capture factors such as prior reputation, injuries, and performance outside the Premier League.
+
+**Evaluation note:** The 2025–26 season was excluded from model fitting but examined during model development. These results therefore represent a chronological evaluation rather than a completely untouched final holdout.
+
 [Back to Top](#football-transfer-value-predictor)
 
 ## Error Analysis
